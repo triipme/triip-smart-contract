@@ -1,0 +1,25 @@
+{
+  "name": "tiim",
+  "version": "1.0.0",
+  "description": "TriipMiles token",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "dev": "TIIM_ENV=TEST node server.js",
+    "dev-rinkeby": "TIIM_ENV=RINKEBY node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/triipme/TIIM.git"
+  },
+  "author": "Lam Le",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/triipme/TIIM/issues"
+  },
+  "homepage": "https://github.com/triipme/TIIM#readme",
+  "dependencies": {
+    "openzeppelin-solidity": "1.12.0",
+    "truffle-hdwallet-provider": "^1.0.2"
+  }
+}
