@@ -18,6 +18,8 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
     event Released(address indexed receiver, uint amount);
     event Burn(address indexed burner, uint value);
+    event Transfer(address indexed sender, address indexed _to, uint _value, bytes _data);
+    event Transfer(address indexed sender, address indexed _to, uint _value, uint _enum_ordinal);
 
     mapping(address => uint) public bonusBalances;
 
@@ -84,8 +86,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     function transferAndCall(address _to, uint _value) public returns (bool success)    {
         super.transfer(_to, _value);
         
-        Transfer(msg.sender, _to, _value);
-        
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
@@ -105,6 +105,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     function transferAndCallWithData(address _to, uint _value, bytes _data) public returns (bool success)    {
         super.transfer(_to, _value);
         
+        Transfer(msg.sender, _to, _value, _data);
         
         if (isContract(_to)) {
             
@@ -123,7 +124,10 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _enum_ordinal The enum ordinal function on receiving contract.
     */
     function transferAndCallWithUint(address _to, uint _value, uint _enum_ordinal) public returns (bool success)    {
+        
         super.transfer(_to, _value);
+
+        Transfer(msg.sender, _to, _value, _enum_ordinal);
         
         if (isContract(_to)) {
             
