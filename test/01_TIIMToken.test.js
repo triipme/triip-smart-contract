@@ -1,20 +1,39 @@
 const TIIMToken = artifacts.require("TIIMToken");
 
-const DECIMALS = 18
-const UNIT = 10 ** DECIMALS
-const MILLION = 10 ** 6
-const TOTAL_SUPPLY = 500 * MILLION * UNIT
+const {
+  MILLION,
+  UNIT
+} = require("../libs/constants");
 
-contract('TIIMToken', (accounts) => {
+const TOTAL_SUPPLY = 500 * MILLION * UNIT;
+let TIIM;
+
+let COMMUNITY_WALLET;
+let CROWD_FUNDING_WALLET;
+let ECO_WALLET;
+let COMPANY_WALLET;
+
+contract("TIIMToken", accounts => {
   
-  it('Total supply should be 500_000_000', async () => {
-    
-    const instance = await TIIMToken.deployed()
-    
-    const totalSupply = await instance.totalSupply()
+  beforeEach("TIIM Token init", async () => {
+    COMMUNITY_WALLET = accounts[0];
+    CROWD_FUNDING_WALLET = accounts[1];
+    ECO_WALLET = accounts[2];
+    COMPANY_WALLET = accounts[3];
 
-    assert.equal(totalSupply.valueOf(), TOTAL_SUPPLY, "500_000_000 is total supply")
+    TIIM = await TIIMToken.deployed();
+  });
+
+  it("Total supply should be 500,000,000", async () => {
+    const totalSupply = await TIIM.totalSupply();
+
+    assert.equal(totalSupply.valueOf(), TOTAL_SUPPLY);
 
   });
-  
+
+  it("Community reserved wallet should have 125,000,000 token", async () => {
+    const communityBalance = await TIIM.balanceOf(COMMUNITY_WALLET);
+
+    assert.equal(communityBalance, 125 * MILLION * UNIT);
+  });
 });
