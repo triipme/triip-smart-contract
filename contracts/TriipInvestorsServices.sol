@@ -91,18 +91,12 @@ contract TriipInvestorsServices {
         
         claim();
         
-        uint refundAmount = this.balance;
+        uint refundAmount = address(this).balance;
         
         buyer.transfer(refundAmount);
         
         emit Refund(buyer, refundAmount);
         
         return refundAmount;
-    }
-
-    function kill() public constant {
-        if (msg.sender == seller) {
-            selfdestruct(buyer);
-        }
     }
 }

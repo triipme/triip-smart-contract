@@ -7,13 +7,18 @@ const TOTAL_SUPPLY = 500 * MILLION * UNIT
 
 contract('TriipInvestorsServices', (accounts) => {
 
+  let deployer = accounts[0];
   let buyer = accounts[1];
   let seller = accounts[2];
   let buyerWallet = accounts[3];
+  let investorService;
+  
+  beforeEach("Triip investors services init", async () => {
+
+    investorService = await TriipInvestorsServices.deployed();
+  });
   
   it('Init contract should have buyer, seller and buyerWallet', async () => {
-    
-    const investorService = await TriipInvestorsServices.deployed()
 
     const _buyer = await investorService.buyer()
 
@@ -29,7 +34,7 @@ contract('TriipInvestorsServices', (accounts) => {
   });
 
   it('Confirm purchase', async () => {
-
+    await investorService.confirmPurchase({from: deployer, value: 1});
   })
   
 });
