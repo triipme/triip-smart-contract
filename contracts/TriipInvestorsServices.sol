@@ -41,12 +41,10 @@ contract TriipInvestorsServices {
 
     uint decimals = 18;
     uint unit = 10 ** decimals;
-    // uint paymentAmount = 82 * unit; // equals to 10,000 USD upfront
-    // uint targetSellingAmount = 820 * unit; // equals to 100,000 USD upfront
     
-    uint paymentAmount = 1 * unit; // equals to 10,000 USD upfront
-    uint targetSellingAmount = 10 * unit; // equals to 100,000 USD upfront
-
+    uint paymentAmount = 82 * unit; // equals to 10,000 USD upfront
+    uint targetSellingAmount = 820 * unit; // equals to 100,000 USD upfront
+    
     uint claimCounting = 0;
 
     PaidStage public paidStage = PaidStage.NONE;
@@ -70,12 +68,11 @@ contract TriipInvestorsServices {
         
         require(start == 0);
         
-        require(msg.value == paymentAmount, "Not equal payment amount");
+        require(msg.value == paymentAmount, "Not equal installment fee");
         
         start = now;
         
-        // end = start + ( 45 * 1 days );
-        end = start + ( 15 * 1 minutes );
+        end = start + ( 45 * 1 days );
         
         balance += msg.value;
     }
@@ -88,9 +85,6 @@ contract TriipInvestorsServices {
     function buyerWalletBalance() public view returns (uint) {
         
         return address(buyerWallet).balance;
-
-        // for testing
-        // return address(buyerWallet).balance - 100 ether;
     }
     
     function claim() public whenNotEnd returns (uint) {
@@ -116,39 +110,35 @@ contract TriipInvestorsServices {
         }
         else {
             
-            claimByKPI();
+            payoffAmount = claimByKPI();
 
         }
         
         return payoffAmount;
     }
 
-    function claimByKPI() private {
+    function claimByKPI() private returns (uint) {
 
         uint payoffAmount = 0;
 
         if( buyerWalletBalance() >= (targetSellingAmount * KPI_25k / 100) 
-            // ad-hoc testing
-            && now >= (start + (5 * 1 minutes) )
-            // && now >= (start + (15 * 1 days) )
+            && now >= (start + (15 * 1 days) )
             && paidStage == PaidStage.NONE ) {
           
-              payoffAmount = balance * 33 / 100;
+            payoffAmount = balance * 33 / 100;
 
-              balance = balance - payoffAmount;
-              
-              seller.transfer(payoffAmount);
+            balance = balance - payoffAmount;
+            
+            seller.transfer(payoffAmount);
 
-              emit Payoff(seller, payoffAmount, KPI_25k );
+            emit Payoff(seller, payoffAmount, KPI_25k );
 
-              paidStage = PaidStage.FIRST_PAYMENT;
+            paidStage = PaidStage.FIRST_PAYMENT;
             
         } 
         
         if ( buyerWalletBalance() >= (targetSellingAmount * KPI_50k / 100) 
-            // ad-hoc test
-            && now >= (start + ( 10 * 1 minutes) )
-            // && now >= (start + ( 30 * 1 days) )
+            && now >= (start + ( 30 * 1 days) )
             ) {
 
             uint paidPercent = 0;
@@ -158,24 +148,23 @@ contract TriipInvestorsServices {
             }else if( paidStage == PaidStage.FIRST_PAYMENT) {
                 paidPercent = 33;
             }
-              payoffAmount = balance * paidPercent / 100;
 
-              balance = balance - payoffAmount;
-              
-              seller.transfer(paymentAmount);
+            payoffAmount = balance * paidPercent / 100;
 
-              emit Payoff(seller, payoffAmount, KPI_50k);
+            balance = balance - payoffAmount;
+            
+            seller.transfer(paymentAmount);
 
-              paidStage = PaidStage.SECOND_PAYMENT;
+            emit Payoff(seller, payoffAmount, KPI_50k);
+
+            paidStage = PaidStage.SECOND_PAYMENT;
         }
 
-        if(
-            // ad-hoc test
-            now >= (start + (15 * 1 minutes) )
-            // now >= (start + (45 * 1 days) )
-            ) {
+        if(now >= (start + (45 * 1 days) )) {
             endContract();
         }
+
+        return payoffAmount;
     }
 
     function endContract() private {
