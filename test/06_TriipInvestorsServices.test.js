@@ -5,6 +5,9 @@ const UNIT = 10 ** DECIMALS
 const MILLION = 10 ** 6
 const TOTAL_SUPPLY = 500 * MILLION * UNIT
 const ONE_DAY = 60 * 60 * 24
+const TRANSFER_GAS = 42000000000000
+
+// await web3.eth.sendTransaction({from: buyerWallet, to: deployer, value: 99.999 * UNIT})
 
 contract('TriipInvestorsServices', (accounts) => {
 
@@ -34,12 +37,9 @@ contract('TriipInvestorsServices', (accounts) => {
     assert.equal(_buyerWallet, buyerWallet)
   });
 
-  it('Confirm purchase - ', async () => {
+  it('When confirm purchase, contract should contain Installment Fee', async () => {
 
-    // send 99 ether from accounts 9 to deployer
-    await web3.eth.sendTransaction({from: accounts[9], to: deployer, value: 99 * UNIT})
-
-    await investorService.confirmPurchase({from: deployer, value: 82 * UNIT })
+    await investorService.confirmPurchase({from: deployer, value: 10 * UNIT })
 
     const start = await investorService.start()
 
@@ -47,59 +47,82 @@ contract('TriipInvestorsServices', (accounts) => {
 
     const diff = (end - start) / ONE_DAY
 
+    const paidStage = await investorService.paidStage()
+
+    const balanceOfContract = await investorService.balance();
+
+    assert.equal(parseInt(balanceOfContract), 10 * UNIT)
+
     assert.equal(diff, 45)
 
-    // const contractBalance = await investorService.contractEthBalance()
-
-    // const buyerWalletBalance = await investorService.buyerWalletBalance()
+    assert.equal(paidStage.valueOf(), 0)
 
   });
 
-  it('Claim', async () => {
-    
-        // send 99 ether from accounts 8 to deployer
-        await web3.eth.sendTransaction({from: accounts[8], to: deployer, value: 99 * UNIT})
-    // await web3.eth.sendTransaction({from: buyerWallet, to: deployer, value: 99.999 * UNIT})
-
-    // var buyerWalletBalance = await web3.eth.getBalance(buyerWallet)
-
-    // console.log('buyerWalletBalance : ', buyerWalletBalance)
-
-    await investorService.confirmPurchase( {from: deployer, value: 82 * UNIT })
-
-    const txn1 = await investorService.claim()
-
-    // console.log('Claim : ' , txn1.logs[2].args['_amount'].valueOf() )
-    // console.log('Claim : ' , txn1.logs[2].args['_condition'].valueOf() )
-
-    //const txn2 = await investorService.claim()
-
-    //console.log('Claim : ' , txn2.logs[0].args)
-
-  })
-
-  it('Reach KPI & Claim', async () => {
-
-    var balanceBuyerWallet;
-    
-    balanceBuyerWallet = web3.eth.getBalance(buyerWallet)
-
-    // console.log(balanceBuyerWallet)
-
-    await web3.eth.sendTransaction({from: deployer, to: buyerWallet, value : 1 * UNIT})
-
-    balanceBuyerWallet = web3.eth.getBalance(buyerWallet)
-
-    // console.log(balanceBuyerWallet)
-
-    const txn1 = await investorService.claim()
-
-    // console.log('Claim : ' , txn1)
-
-    // console.log('Claim : ' , txn1.logs[0])
-    // console.log('Claim : ' , txn1.logs[1])
-    // console.log('Claim : ' , txn1.logs[2])
-
-  })
-  
 });
+
+contract('TriipInvestorsServices claim by KPI', (accounts) => {
+  let deployer = accounts[0];
+  let buyer = accounts[1];
+  let seller = accounts[2];
+  let buyerWallet = accounts[3];
+  let investorService;
+
+  beforeEach("Triip investors services init", async () => {
+
+    investorService = await TriipInvestorsServices.new(buyer, seller, buyerWallet)
+
+    await investorService.confirmPurchase( {from: deployer, value: 10 * UNIT })
+    
+  });
+
+  it('Claim when seller reach 100k KPI should end contract and seller should receive their installment fee', async () => {
+
+    // fake send 20 ETH to buyerWallet to reach 100k KPI
+    await web3.eth.sendTransaction({from: accounts[9], to: buyerWallet, value: 20 * UNIT})
+
+    const txn = await investorService.claim()
+
+    const claimEvent = txn.logs[0]
+    const payoffEvent = txn.logs[1]
+    
+    assert.equal(payoffEvent.args['_kpi'], 100)
+
+    assert.equal(parseInt(claimEvent.args['_buyerWalletBalance'].valueOf()) , 20 * UNIT);
+
+    const isEnd = await investorService.isEnd()
+
+    assert.isTrue(isEnd, 'this contract should end')
+
+    const sellerBalance = await web3.eth.getBalance(seller)
+
+    assert.equal(sellerBalance - 100 * UNIT, 10 * UNIT, 'seller should receive 10ETH');
+
+    // teardown
+    await web3.eth.sendTransaction({from: buyerWallet, to: accounts[9], value: 20 * UNIT - TRANSFER_GAS})
+    await web3.eth.sendTransaction({from: seller, to: accounts[9], value: 10 * UNIT - TRANSFER_GAS})
+
+  })
+
+  it('Claim when seller reach 25k KPI', async () => {
+
+    // mock : send 5 ETH to buyerWallet to reach 25k KPI
+    await web3.eth.sendTransaction({from: accounts[8], to: buyerWallet, value: 5 * UNIT})
+
+    const buyerWalletBalance = await investorService.buyerWalletBalance()
+
+    const txn = await investorService.claim()
+
+    const claimEvent = txn.logs[0]
+    const payoffEvent = txn.logs[1]
+
+    assert.equal(parseInt(claimEvent.args['_buyerWalletBalance'].valueOf()) , 5 * UNIT);
+    assert.equal(parseInt(payoffEvent.args['_amount'],  ))
+
+    // teardown
+    await web3.eth.sendTransaction({from: buyerWallet, to: accounts[8], value: 5 * UNIT - TRANSFER_GAS})
+    await web3.eth.sendTransaction({from: seller, to: accounts[9], value: 3.3 * UNIT - TRANSFER_GAS})
+
+  })
+
+})
