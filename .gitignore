@@ -109,3 +109,7 @@ yarn.lock
 package-lock.json
 
 # End of https://www.gitignore.io/api/node,soliditytruffle
+contracts/tokensale1.txt
+contracts/tokensale2.txt
+contracts/tokensale3.txt
+contracts/tokensale4.txt
