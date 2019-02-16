@@ -1,11 +1,11 @@
 const TriipInvestorsServices = artifacts.require("TriipInvestorsServices");
 
-const DECIMALS = 18
-const UNIT = 10 ** DECIMALS
-const MILLION = 10 ** 6
-const TOTAL_SUPPLY = 500 * MILLION * UNIT
+const {
+  UNIT,
+  TRANSFER_GAS
+} = require("../libs/constants");
+
 const ONE_DAY = 60 * 60 * 24
-const TRANSFER_GAS = 42000000000000
 
 // await web3.eth.sendTransaction({from: buyerWallet, to: deployer, value: 99.999 * UNIT})
 
@@ -78,7 +78,7 @@ contract('TriipInvestorsServices claim by KPI', (accounts) => {
 
   it('Claim when seller reach 100k KPI should end contract and seller should receive their installment fee', async () => {
 
-    // fake send 20 ETH to buyerWallet to reach 100k KPI
+    // mock: send 20 ETH to buyerWallet to reach 100k KPI
     await web3.eth.sendTransaction({from: accounts[9], to: buyerWallet, value: 20 * UNIT})
 
     const txn = await investorService.claim()

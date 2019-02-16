@@ -7,6 +7,7 @@ const UNIT = 10 ** DECIMALS;
 const MILLION = 10 ** 6;
 const COMMUNITY_RESERVED = 125 * MILLION;
 const CROWD_FUNDING = 165 * MILLION;
+const TRANSFER_GAS = 42000000000000
 
 
 module.exports = {
@@ -16,5 +17,6 @@ module.exports = {
     MILLION,
     UNIT,
     COMMUNITY_RESERVED,
-    CROWD_FUNDING
+    CROWD_FUNDING,
+    TRANSFER_GAS
 };
