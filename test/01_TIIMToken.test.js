@@ -36,4 +36,15 @@ contract("TIIMToken", accounts => {
 
     assert.equal(communityBalance, 125 * MILLION * UNIT);
   });
+
+  it("Test buy TIIM with tomo -> 10 TOMO = 320 TIIM", async () => {
+    const buyer = accounts[9];
+
+    const txn = await TIIM.processBuy({from: buyer, value: 10 * UNIT});
+
+    const eventBuy = txn.logs[1];
+
+    assert.equal(parseInt(eventBuy.args['_tiim_sold']) , 320 * UNIT , 'should receive 320 TIIM when purchase 10 TOMO');
+
+  });
 });

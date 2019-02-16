@@ -7,9 +7,9 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 
 contract ERC677Receiver {
-  function onTokenTransfer(address _sender, uint _value);
-  function onTokenTransferWithUint(address _sender, uint _value, uint _enum_ordinal);
-  function onTokenTransferWithByte(address _sender, uint _value, bytes _data);
+  function onTokenTransfer(address _sender, uint _amount) public;
+  function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public;
+  function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
 }
 
 contract TIIMToken is StandardToken, Ownable, Pausable {
@@ -18,8 +18,9 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
     event Released(address indexed receiver, uint amount);
     event Burn(address indexed burner, uint value);
-    event Transfer(address indexed sender, address indexed _to, uint _value, bytes _data);
-    event Transfer(address indexed sender, address indexed _to, uint _value, uint _enum_ordinal);
+    event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
+    event Transfer(address indexed sender, address indexed _to, uint _amount, uint _enum_ordinal);
+    event Buy(address indexed _contributor, uint _tiim_sold);
 
     mapping(address => uint) public bonusBalances;
 
@@ -29,11 +30,13 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public totalSupply = 500 * 10 ** 6 * TIIM_UNIT;                                 // 500,000,000 TIIM
 
     uint    public constant TIIM_UNIT = 10 ** 18;
-    uint    public constant TIIMCommunityReserveAllocation = 125 * 10 ** 6 * TIIM_UNIT;     // 25% = 125,000,000 TIIM
-    uint    public constant TIIMCrowdFundAllocation = 165 * 10 ** 6 * TIIM_UNIT;            // 33% = 165,000,000 TIIM
-    uint    public constant TIIMEcoAllocation = 75 * 10 ** 6 * TIIM_UNIT;                   // 15% = 75,000,000 TIIM
-    uint    public constant TIIMCompanyAllocation = 85 * 10 ** 6 * TIIM_UNIT;               // 17% = 85,000,000 TIIM
-    uint    public constant TIIMTeamAllocation = 50 * 10 ** 6 * TIIM_UNIT;                  // 10% = 50,000,000 TIIM
+    uint    public constant TIIMCommunityReserveAllocation = 125 * 10 ** 6 * TIIM_UNIT;     // 125,000,000 TIIM
+    uint    public constant TIIMCrowdFundAllocation = 143 * 10 ** 6 * TIIM_UNIT;            // 143,000,000 TIIM
+    uint    public constant TIIMEcoAllocation = 75 * 10 ** 6 * TIIM_UNIT;                   // 75,000,000 TIIM
+    uint    public constant TIIMCompanyAllocation = 85 * 10 ** 6 * TIIM_UNIT;               // 85,000,000 TIIM
+    uint    public constant TIIMTeamAllocation = 50 * 10 ** 6 * TIIM_UNIT;                  // 50,000,000 TIIM
+
+    uint    public constant TIIMCrowdFundTomoAllocation = 22 * 10 ** 6 * TIIM_UNIT;         // 22,000,000 TIIM
 
     address public tiimCommunityReserveWallet;
     address public tiimCrowdFundAllocationWallet;
@@ -66,6 +69,10 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     
     uint    public constant RELEASE_PERIOD = 30 days;
 
+    uint    public constant conversionRate = 32;                                            // 1 TOMO = 32 TIIM
+    uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
+
+
     constructor(address _tiimCommunityReserveWallet, address _tiimCrowdFundAllocationWallet, address _tiimEcoWallet, address _tiimCompanyWallet) public {
         tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
         tiimCrowdFundAllocationWallet = _tiimCrowdFundAllocationWallet;
@@ -76,21 +83,22 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         balances[tiimCrowdFundAllocationWallet] = balances[tiimCrowdFundAllocationWallet].add(TIIMCrowdFundAllocation);
         balances[tiimEcoWallet] = balances[tiimEcoWallet].add(TIIMEcoAllocation);
         balances[tiimCompanyWallet] = balances[tiimCompanyWallet].add(TIIMCompanyAllocation);
+        balances[this] = TIIMCrowdFundTomoAllocation;
     }
 
     /**
     * @dev transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _value The amount to be transferred.
+    * @param _amount The amount to be transferred.
     */
-    function transferAndCall(address _to, uint _value) public returns (bool success)    {
-        super.transfer(_to, _value);
+    function transferAndCall(address _to, uint _amount) public returns (bool success)    {
+        super.transfer(_to, _amount);
         
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
             
-            receiver.onTokenTransfer(msg.sender, _value);
+            receiver.onTokenTransfer(msg.sender, _amount);
         }
         
         return true;
@@ -99,19 +107,19 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     /**
     * @dev transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _value The amount to be transferred.
+    * @param _amount The amount to be transferred.
     * @param _data The extra data to be passed to the receiving contract.
     */
-    function transferAndCallWithData(address _to, uint _value, bytes _data) public returns (bool success)    {
-        super.transfer(_to, _value);
+    function transferAndCallWithData(address _to, uint _amount, bytes _data) public returns (bool success)    {
+        super.transfer(_to, _amount);
         
-        Transfer(msg.sender, _to, _value, _data);
+        emit Transfer(msg.sender, _to, _amount, _data);
         
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
             
-            receiver.onTokenTransferWithByte(msg.sender, _value, _data);
+            receiver.onTokenTransferWithByte(msg.sender, _amount, _data);
         }
         
         return true;
@@ -120,26 +128,26 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     /**
     * @dev transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _value The amount to be transferred.
+    * @param _amount The amount to be transferred.
     * @param _enum_ordinal The enum ordinal function on receiving contract.
     */
-    function transferAndCallWithUint(address _to, uint _value, uint _enum_ordinal) public returns (bool success)    {
+    function transferAndCallWithUint(address _to, uint _amount, uint _enum_ordinal) public returns (bool success)    {
         
-        super.transfer(_to, _value);
+        super.transfer(_to, _amount);
 
-        Transfer(msg.sender, _to, _value, _enum_ordinal);
+        emit Transfer(msg.sender, _to, _amount, _enum_ordinal);
         
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
             
-            receiver.onTokenTransferWithUint(msg.sender, _value, _enum_ordinal);
+            receiver.onTokenTransferWithUint(msg.sender, _amount, _enum_ordinal);
         }
         
         return true;
     }
 
-    function isContract(address _addr) private returns (bool hasCode)  {
+    function isContract(address _addr) private view returns (bool hasCode)  {
         uint length;
         assembly { length := extcodesize(_addr) }
         return length > 0;
@@ -239,9 +247,29 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     }
 
     // ------------------------------------------------------------------------
-    // Don't accept ETH
+    // Accept TOMO
     // ------------------------------------------------------------------------
-    function () public payable {
-        revert();
+    function () public payable  {
+
+        processBuy();
+
+    }
+
+    function processBuy() public payable whenNotPaused {
+
+        address _contributor = msg.sender;
+        uint _amount = msg.value;
+        
+        require(_contributor != address(0x0));
+        
+        require(_amount >= (minimumContribute * 1 ether), "We only accept minimum purchase of 10 TOMO");
+        
+        require(!isContract(_contributor), "We do not allow buyer from contract");
+        
+        uint tiimToken = _amount.mul(conversionRate);
+        
+        ERC20(this).transfer(_contributor, tiimToken);
+
+        emit Buy(_contributor, tiimToken);
     }
 }
