@@ -270,6 +270,9 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         
         ERC20(this).transfer(_contributor, tiimToken);
 
+        // send TOMO to Triip crowd funding wallet
+        tiimCrowdFundAllocationWallet.transfer(_amount);
+
         emit Buy(_contributor, tiimToken);
     }
 }
