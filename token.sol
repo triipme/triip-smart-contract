@@ -387,16 +387,19 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public decimals = 18;
     string  public name = "TripMiles";
     string  public symbol = "TIIM";
-    uint    public totalSupply = 500 * 10 ** 6 * TIIM_UNIT;                                 // 500,000,000 TIIM
+    uint    public totalSupply = 500 * MILLION_UNIT;                                 // 500,000,000 TIIM
 
-    uint    public constant TIIM_UNIT = 10 ** 18;
-    uint    public constant TIIMCommunityReserveAllocation = 125 * 10 ** 6 * TIIM_UNIT;     // 125,000,000 TIIM
-    uint    public constant TIIMCrowdFundAllocation = 143 * 10 ** 6 * TIIM_UNIT;            // 143,000,000 TIIM
-    uint    public constant TIIMEcoAllocation = 75 * 10 ** 6 * TIIM_UNIT;                   // 75,000,000 TIIM
-    uint    public constant TIIMCompanyAllocation = 85 * 10 ** 6 * TIIM_UNIT;               // 85,000,000 TIIM
-    uint    public constant TIIMTeamAllocation = 50 * 10 ** 6 * TIIM_UNIT;                  // 50,000,000 TIIM
+    uint    public constant DECIMALS_UNIT = 18;
+    uint    public constant TIIM_UNIT = 10 ** DECIMALS_UNIT;
+    uint    public constant MILLION_UNIT = 10 ** 6 * TIIM_UNIT;
 
-    uint    public constant TIIMCrowdFundTomoAllocation = 22 * 10 ** 6 * TIIM_UNIT;         // 22,000,000 TIIM
+    uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_UNIT;     // 125,000,000 TIIM
+    uint    public constant TIIMCrowdFundAllocation = 143 * MILLION_UNIT;            // 143,000,000 TIIM
+    uint    public constant TIIMEcoAllocation = 75 * MILLION_UNIT;                   // 75,000,000 TIIM
+    uint    public constant TIIMCompanyAllocation = 85 * MILLION_UNIT;               // 85,000,000 TIIM
+    uint    public constant TIIMTeamAllocation = 50 * MILLION_UNIT;                  // 50,000,000 TIIM
+
+    uint    public constant TIIMCrowdFundTomoAllocation = 22 * MILLION_UNIT;         // 22,000,000 TIIM
 
     address public tiimCommunityReserveWallet;
     address public tiimCrowdFundAllocationWallet;
@@ -413,14 +416,14 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public endTime;
 
     // TIIM team allocation variables
-    uint    public constant teamAllocation = 45 * 10 ** 6 * TIIM_UNIT;                      // allocate for team : 9% = 45,000,000 TIIM
+    uint    public constant teamAllocation = 45 * MILLION_UNIT * TIIM_UNIT;                      // allocate for team : 9% = 45,000,000 TIIM
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
     uint    public maxTeamTranches = 12;                                                    // release team tokens 12 tranches every 30 days period
     
     // TIIM founder allocation variables
-    uint    public constant founderAllocation = 5 * 10 ** 6 * TIIM_UNIT;                    // allocate for founder : 1% = 5,000,000 TIIM
+    uint    public constant founderAllocation = 5 * MILLION_UNIT * TIIM_UNIT;                    // allocate for founder : 1% = 5,000,000 TIIM
     
     
     uint    public totalFounderAllocated = 0;
@@ -433,7 +436,11 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
 
-    constructor(address _tiimCommunityReserveWallet, address _tiimCrowdFundAllocationWallet, address _tiimEcoWallet, address _tiimCompanyWallet) public {
+    constructor(address _tiimCommunityReserveWallet, 
+                address _tiimCrowdFundAllocationWallet, 
+                address _tiimEcoWallet, 
+                address _tiimCompanyWallet) public {
+                    
         tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
         tiimCrowdFundAllocationWallet = _tiimCrowdFundAllocationWallet;
         tiimEcoWallet = _tiimEcoWallet;
@@ -615,6 +622,10 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
     }
 
+    function publicIcoRemainingToken() public view returns (uint) {
+        return ERC20(this).balanceOf(this);
+    }
+
     function processBuy() public payable whenNotPaused {
 
         address _contributor = msg.sender;
@@ -627,8 +638,16 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         require(!isContract(_contributor), "We do not allow buyer from contract");
         
         uint tiimToken = _amount.mul(conversionRate);
+
+        uint remainingToken = publicIcoRemainingToken();
+
+        require(remainingToken >= tiimToken, "We have not enough Token for this purchase");
         
+        // send TIIM to contributor address
         ERC20(this).transfer(_contributor, tiimToken);
+
+        // send TOMO to Triip crowd funding wallet
+        tiimCrowdFundAllocationWallet.transfer(_amount);
 
         emit Buy(_contributor, tiimToken);
     }
