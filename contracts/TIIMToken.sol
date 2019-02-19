@@ -25,7 +25,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     mapping(address => uint) public bonusBalances;
 
     uint    public decimals = 18;
-    string  public name = "TripMiles";
+    string  public name = "TriipMiles";
     string  public symbol = "TIIM";
     uint    public totalSupply = 500 * MILLION_UNIT;                                        // 500,000,000 TIIM
 
@@ -53,14 +53,14 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public startTime;
     uint    public endTime = 1554051599;                                                    // March 31, 2019 11:59:59 PM GMT+07:00
 
-    // TIIM team allocation variables
+    // TIIM team allocation & holding variables
     uint    public constant teamAllocation = 45 * MILLION_UNIT * TIIM_UNIT;                 // allocate for team : 9% = 45,000,000 TIIM
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
     uint    public maxTeamTranches = 12;                                                    // release team tokens 12 tranches every 30 days period
     
-    // TIIM founder allocation variables
+    // TIIM founder allocation & holding variables
     uint    public constant founderAllocation = 5 * MILLION_UNIT * TIIM_UNIT;               // allocate for founder : 1% = 5,000,000 TIIM
     
     
@@ -70,19 +70,23 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     
     uint    public constant RELEASE_PERIOD = 30 days;
 
-    uint    public constant conversionRate = 40;                                            // 1 TOMO = 32 TIIM
+    uint    public constant conversionRate = 40;                                            // 1 TOMO = 40 TIIM
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
 
     constructor(address _tiimCommunityReserveWallet, 
                 address _tiimCrowdFundAllocationWallet, 
                 address _tiimEcoWallet, 
-                address _tiimCompanyWallet) public {
+                address _tiimCompanyWallet,
+                address _teamWallet,
+                address _founderWallet) public {
                     
         tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
         tiimCrowdFundAllocationWallet = _tiimCrowdFundAllocationWallet;
         tiimEcoWallet = _tiimEcoWallet;
         tiimCompanyWallet = _tiimCompanyWallet;
+        teamWallet = _teamWallet;
+        founderWallet = _founderWallet;
 
         balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(TIIMCommunityReserveAllocation);
         balances[tiimCrowdFundAllocationWallet] = balances[tiimCrowdFundAllocationWallet].add(TIIMCrowdFundAllocation);
@@ -164,10 +168,11 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     function startPublicIco() onlyOwner public {
         require(startTime == 0, "Start time must be not setup yet");
         startTime = now;
+        
     }
 
     modifier afterEndIco() {
-        require(now >= end, "Should be after End ICO");
+        require(now >= endTime, "Should be after End ICO");
         _;
     }
     
@@ -177,7 +182,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     */
     function releaseTeamTokens() public returns (bool) {
 
-        require(endTime > 0);
         require(teamWallet != 0x0);
         require(totalTeamAllocated < teamAllocation);
         require(teamTranchesReleased < maxTeamTranches);
@@ -206,7 +210,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     */
     function releaseFounderTokens() public returns (bool) {
 
-        require(endTime > 0);
         require(founderWallet != 0x0);
         require(totalFounderAllocated < founderAllocation);
         require(founderTranchesReleased < maxFounderTranches);
@@ -244,28 +247,40 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
     function processBuy() public payable whenNotPaused {
 
-        address _contributor = msg.sender;
-        uint _amount = msg.value;
+        require(remainingToken > 0, "We have not enough Token for this purchase");
         
         require(_contributor != address(0x0));
         
         require(_amount >= (minimumContribute * 1 ether), "We only accept minimum purchase of 10 TOMO");
         
         require(!isContract(_contributor), "We do not allow buyer from contract");
+
+        address _contributor = msg.sender;
+        uint _amount = msg.value;
         
-        uint tiimToken = _amount.mul(conversionRate);
+        uint tokenAmount = _amount.mul(conversionRate);
 
         uint remainingToken = publicIcoRemainingToken();
 
-        require(remainingToken >= tiimToken, "We have not enough Token for this purchase");
-        
+        if( tokenAmount > remainingToken ) {
+
+            // partial sale
+            tokenAmount = remainingToken;
+            
+            uint refundAmount = _amount.sub(remainingToken.div(conversionRate));
+
+            _amount = _amount - refundAmount;
+            
+            _contributor.transfer(refundAmount);
+        }
+
         // send TIIM to contributor address
-        ERC20(this).transfer(_contributor, tiimToken);
+        ERC20(this).transfer(_contributor, tokenAmount);
 
         // send TOMO to Triip crowd funding wallet
         tiimCrowdFundAllocationWallet.transfer(_amount);
-
-        emit Buy(_contributor, tiimToken);
+            
+        emit Buy(_contributor, tokenAmount);
     }
 
     function refundRemainingTokenToPatron() public afterEndIco returns (bool) {
