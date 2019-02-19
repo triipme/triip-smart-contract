@@ -27,19 +27,19 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public decimals = 18;
     string  public name = "TripMiles";
     string  public symbol = "TIIM";
-    uint    public totalSupply = 500 * MILLION_UNIT;                                 // 500,000,000 TIIM
+    uint    public totalSupply = 500 * MILLION_UNIT;                                        // 500,000,000 TIIM
 
     uint    public constant DECIMALS_UNIT = 18;
     uint    public constant TIIM_UNIT = 10 ** DECIMALS_UNIT;
     uint    public constant MILLION_UNIT = 10 ** 6 * TIIM_UNIT;
 
-    uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_UNIT;     // 125,000,000 TIIM
-    uint    public constant TIIMCrowdFundAllocation = 143 * MILLION_UNIT;            // 143,000,000 TIIM
-    uint    public constant TIIMEcoAllocation = 75 * MILLION_UNIT;                   // 75,000,000 TIIM
-    uint    public constant TIIMCompanyAllocation = 85 * MILLION_UNIT;               // 85,000,000 TIIM
-    uint    public constant TIIMTeamAllocation = 50 * MILLION_UNIT;                  // 50,000,000 TIIM
+    uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_UNIT;            // 125,000,000 TIIM
+    uint    public constant TIIMCrowdFundAllocation = 75 * MILLION_UNIT;                    // 75,000,000 TIIM - private sale & other currency
+    uint    public constant TIIMEcoAllocation = 75 * MILLION_UNIT;                          // 75,000,000 TIIM
+    uint    public constant TIIMCompanyAllocation = 85 * MILLION_UNIT;                      // 85,000,000 TIIM
+    uint    public constant TIIMTeamAllocation = 50 * MILLION_UNIT;                         // 50,000,000 TIIM
 
-    uint    public constant TIIMCrowdFundTomoAllocation = 22 * MILLION_UNIT;         // 22,000,000 TIIM
+    uint    public constant TIIMCrowdFundTomoAllocation = 90 * MILLION_UNIT;                // 90,000,000 TIIM
 
     address public tiimCommunityReserveWallet;
     address public tiimCrowdFundAllocationWallet;
@@ -48,22 +48,20 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     address public teamWallet;
     address public founderWallet;
     
-    uint    public constant HOLDING_PERIOD = 180 days;
-    
     bool    public stopped = false;
 
     uint    public startTime;
-    uint    public endTime;
+    uint    public endTime = 1554051599;                                                    // March 31, 2019 11:59:59 PM GMT+07:00
 
     // TIIM team allocation variables
-    uint    public constant teamAllocation = 45 * MILLION_UNIT * TIIM_UNIT;                      // allocate for team : 9% = 45,000,000 TIIM
+    uint    public constant teamAllocation = 45 * MILLION_UNIT * TIIM_UNIT;                 // allocate for team : 9% = 45,000,000 TIIM
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
     uint    public maxTeamTranches = 12;                                                    // release team tokens 12 tranches every 30 days period
     
     // TIIM founder allocation variables
-    uint    public constant founderAllocation = 5 * MILLION_UNIT * TIIM_UNIT;                    // allocate for founder : 1% = 5,000,000 TIIM
+    uint    public constant founderAllocation = 5 * MILLION_UNIT * TIIM_UNIT;               // allocate for founder : 1% = 5,000,000 TIIM
     
     
     uint    public totalFounderAllocated = 0;
@@ -72,7 +70,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     
     uint    public constant RELEASE_PERIOD = 30 days;
 
-    uint    public constant conversionRate = 32;                                            // 1 TOMO = 32 TIIM
+    uint    public constant conversionRate = 40;                                            // 1 TOMO = 32 TIIM
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
 
@@ -159,21 +157,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         assembly { length := extcodesize(_addr) }
         return length > 0;
     }
-
-
-    /*
-        @dev Bonus vesting condition
-    */
-    modifier afterHolding() {
-        require(endTime > 0);
-
-        uint validTime = endTime + HOLDING_PERIOD;
-
-        require(now > validTime);
-
-        _;
-    }
-
     
     /*
         @dev start public ICO function
@@ -183,16 +166,9 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         startTime = now;
     }
 
-    /*
-        @dev end public ICO function
-     */
-    function endPublicIco() onlyOwner public {
-
-        require(startTime > 0);
-        require(endTime < startTime, "Start time must be setup already");
-        require(endTime == 0, "End time must be not setup yet");
-        
-        endTime = now;
+    modifier afterEndIco() {
+        require(now >= end, "Should be after End ICO");
+        _;
     }
     
     /**
@@ -290,5 +266,14 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         tiimCrowdFundAllocationWallet.transfer(_amount);
 
         emit Buy(_contributor, tiimToken);
+    }
+
+    function refundRemainingTokenToPatron() public afterEndIco returns (bool) {
+        
+        uint remainingToken = balanceOf(this);
+
+        ERC20(this).transfer(tiimCommunityReserveWallet, remainingToken);
+
+        return true;
     }
 }
