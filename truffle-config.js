@@ -36,6 +36,14 @@ module.exports = {
       gas: 4200000,
       gasPrice: 10000000000
     },
+
+    rinkeby: {
+      provider: () => {
+        return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/v3/710034254fa54f4cb22c151aeb0b398e");
+      },
+      network_id: 4,
+      gas: 4000000
+    }
   }
   
 };
