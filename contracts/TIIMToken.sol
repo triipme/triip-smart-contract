@@ -20,8 +20,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
     event Transfer(address indexed sender, address indexed _to, uint _amount, uint _enum_ordinal);
     event Buy(address indexed _contributor, uint _tiim_sold);
-
-    mapping(address => uint) public bonusBalances;
+    event Refund(address indexed _patron_wallet, uint _tiim_remaining_token);
 
     uint    public decimals = 18;
     string  public name = "TriipMiles";
@@ -46,11 +45,10 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     address public tiimCompanyWallet;
     address public teamWallet;
     address public founderWallet;
-    
-    bool    public stopped = false;
+    address public tiimCrowdFundTomoAllocationWallet;
 
-    uint    public startTime = 1550854800;                                                      // Saturday, February 23, 2019 0:00:00 GMT+07:00
-    uint    public endTime = 1554051599;                                                        // March 31, 2019 11:59:59 PM GMT+07:00
+    uint    public startTime = 1550854800;                                                      // February 23, 2019 0:00:00 GMT+07:00
+    uint    public endTime = 1554051599;                                                        // March 31, 2019 23:59:59 GMT+07:00
 
     // TIIM team allocation & holding variables
     uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                            // allocate for team : 9% = 45,000,000 TIIM
@@ -78,7 +76,8 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
                 address _tiimEcoWallet, 
                 address _tiimCompanyWallet,
                 address _teamWallet,
-                address _founderWallet) public {
+                address _founderWallet,
+                address _tiimCrowdFundTomoAllocationWallet) public {
                     
         tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
         tiimCrowdFundAllocationWallet = _tiimCrowdFundAllocationWallet;
@@ -86,14 +85,23 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         tiimCompanyWallet = _tiimCompanyWallet;
         teamWallet = _teamWallet;
         founderWallet = _founderWallet;
+        tiimCrowdFundTomoAllocationWallet = _tiimCrowdFundTomoAllocationWallet;
 
         balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(TIIMCommunityReserveAllocation);
         balances[tiimCrowdFundAllocationWallet] = balances[tiimCrowdFundAllocationWallet].add(TIIMCrowdFundAllocation);
         balances[tiimEcoWallet] = balances[tiimEcoWallet].add(TIIMEcoAllocation);
         balances[tiimCompanyWallet] = balances[tiimCompanyWallet].add(TIIMCompanyAllocation);
-        balances[this] = TIIMCrowdFundTomoAllocation;
+        balances[tiimCrowdFundTomoAllocationWallet] = balances[tiimCrowdFundTomoAllocationWallet].add(TIIMCrowdFundTomoAllocation);
 
         pause();
+    }
+
+    /**
+    * @dev ensure function call after endTime ICO
+    */
+    modifier afterEndIco() {
+        require(now >= endTime, "Should be after End ICO");
+        _;
     }
 
     /**
@@ -112,7 +120,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _amount The amount to be transferred.
     */
     function transferAndCall(address _to, uint _amount) public whenNotPaused returns (bool success)    {
-        super.transfer(_to, _amount);
+        transfer(_to, _amount);
         
         if (isContract(_to)) {
             
@@ -131,7 +139,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _data The extra data to be passed to the receiving contract.
     */
     function transferAndCallWithData(address _to, uint _amount, bytes _data) public whenNotPaused returns (bool success)    {
-        super.transfer(_to, _amount);
+        transfer(_to, _amount);
         
         emit Transfer(msg.sender, _to, _amount, _data);
         
@@ -153,7 +161,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     */
     function transferAndCallWithUint(address _to, uint _amount, uint _enum_ordinal) public whenNotPaused returns (bool success)    {
         
-        super.transfer(_to, _amount);
+        transfer(_to, _amount);
 
         emit Transfer(msg.sender, _to, _amount, _enum_ordinal);
         
@@ -180,11 +188,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         require(now >= startTime, "Start public ICO time should be after startTime");
         
         unpause();
-    }
-
-    modifier afterEndIco() {
-        require(now >= endTime, "Should be after End ICO");
-        _;
     }
     
     /**
@@ -252,10 +255,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
     }
 
-    function publicIcoRemainingToken() public view returns (uint) {
-        return ERC20(this).balanceOf(this);
-    }
-
     function processBuy() public payable whenNotPaused {
 
         address _contributor = msg.sender;
@@ -283,23 +282,37 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
             _amount = _amount - refundAmount;
             
+            // refund remaining Tomo to contributor
             _contributor.transfer(refundAmount);
         }
 
+        // subtract TIIM from tiimCrowdFundTomoAllocationWallet
+        balances[tiimCrowdFundTomoAllocationWallet] = balances[tiimCrowdFundTomoAllocationWallet].sub(tokenAmount);
         // send TIIM to contributor address
-        ERC20(this).transfer(_contributor, tokenAmount);
+        balances[_contributor] = balances[_contributor].add(tokenAmount);
 
         // send TOMO to Triip crowd funding wallet
         tiimCrowdFundAllocationWallet.transfer(_amount);
-            
+
+        emit Transfer(tiimCrowdFundTomoAllocationWallet, _contributor, tokenAmount);
         emit Buy(_contributor, tokenAmount);
+    }
+
+    function publicIcoRemainingToken() public view returns (uint) {
+        return balanceOf(tiimCrowdFundTomoAllocationWallet);
     }
 
     function refundRemainingTokenToPatron() public afterEndIco returns (bool) {
         
-        uint remainingToken = balanceOf(this);
+        uint remainingToken = publicIcoRemainingToken();
 
-        ERC20(this).transfer(tiimCommunityReserveWallet, remainingToken);
+        balances[tiimCrowdFundTomoAllocationWallet] = balances[tiimCrowdFundTomoAllocationWallet].sub(remainingToken);
+
+        balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(remainingToken);
+
+        emit Transfer(tiimCrowdFundTomoAllocationWallet, tiimCommunityReserveWallet, remainingToken);
+
+        emit Refund(tiimCommunityReserveWallet, remainingToken);
 
         return true;
     }
