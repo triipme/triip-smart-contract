@@ -364,7 +364,7 @@ contract StandardToken is ERC20, BasicToken {
 
 }
 
-// File: contracts/TIIMToken.sol
+// File: contracts/SIROToken.sol
 
 contract ERC677Receiver {
   function onTokenTransfer(address _sender, uint _amount) public;
@@ -372,53 +372,53 @@ contract ERC677Receiver {
   function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
 }
 
-contract TIIMToken is StandardToken, Ownable, Pausable {
+contract SIROToken is StandardToken, Ownable, Pausable {
 
     using SafeMath for uint;
 
     event Released(address indexed receiver, uint amount);
     event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
     event Transfer(address indexed sender, address indexed _to, uint _amount, uint _enum_ordinal);
-    event Buy(address indexed _contributor, uint _tiim_sold);
-    event Refund(address indexed _patron_wallet, uint _tiim_remaining_token);
+    event Buy(address indexed _contributor, uint _SIRO_sold);
+    event Refund(address indexed _patron_wallet, uint _SIRO_remaining_token);
 
     uint    public decimals = 18;
-    string  public name = "TriipMiles";
-    string  public symbol = "TIIM";
-    uint    public totalSupply = 500 * MILLION_TIIM_UNIT;                                        // 500,000,000 TIIM
+    string  public name = "SiroSmile";
+    string  public symbol = "SIRO";
+    uint    public totalSupply = 500 * MILLION_SIRO_UNIT;                                        // 500,000,000 SIRO
 
     uint    public constant DECIMALS_UNIT = 18;
-    uint    public constant TIIM_UNIT = 10 ** DECIMALS_UNIT;
-    uint    public constant MILLION_TIIM_UNIT = 10 ** 6 * TIIM_UNIT;
+    uint    public constant SIRO_UNIT = 10 ** DECIMALS_UNIT;
+    uint    public constant MILLION_SIRO_UNIT = 10 ** 6 * SIRO_UNIT;
 
-    uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_TIIM_UNIT;            // 125,000,000 TIIM
-    uint    public constant TIIMCrowdFundAllocation = 75 * MILLION_TIIM_UNIT;                    // 75,000,000 TIIM - private sale & other currency
-    uint    public constant TIIMEcoAllocation = 75 * MILLION_TIIM_UNIT;                          // 75,000,000 TIIM
-    uint    public constant TIIMCompanyAllocation = 85 * MILLION_TIIM_UNIT;                      // 85,000,000 TIIM
-    uint    public constant TIIMTeamAllocation = 50 * MILLION_TIIM_UNIT;                         // 50,000,000 TIIM
+    uint    public constant SIROCommunityReserveAllocation = 125 * MILLION_SIRO_UNIT;            // 125,000,000 SIRO
+    uint    public constant SIROCrowdFundAllocation = 75 * MILLION_SIRO_UNIT;                    // 75,000,000 SIRO - private sale & other currency
+    uint    public constant SIROEcoAllocation = 75 * MILLION_SIRO_UNIT;                          // 75,000,000 SIRO
+    uint    public constant SIROCompanyAllocation = 85 * MILLION_SIRO_UNIT;                      // 85,000,000 SIRO
+    uint    public constant SIROTeamAllocation = 50 * MILLION_SIRO_UNIT;                         // 50,000,000 SIRO
 
-    uint    public constant TIIMCrowdFundTomoAllocation = 90 * MILLION_TIIM_UNIT;                // 90,000,000 TIIM
+    uint    public constant SIROCrowdFundTomoAllocation = 90 * MILLION_SIRO_UNIT;                // 90,000,000 SIRO
 
-    address public tiimCommunityReserveWallet;
-    address public tiimCrowdFundAllocationWallet;
-    address public tiimEcoWallet;
-    address public tiimCompanyWallet;
+    address public SIROCommunityReserveWallet;
+    address public SIROCrowdFundAllocationWallet;
+    address public SIROEcoWallet;
+    address public SIROCompanyWallet;
     address public teamWallet;
     address public founderWallet;
-    address public tiimCrowdFundTomoAllocationWallet;
+    address public SIROCrowdFundTomoAllocationWallet;
 
     uint    public startTime = 1550854800;                                                      // February 23, 2019 0:00:00 GMT+07:00
     uint    public endTime = 1554051599;                                                        // March 31, 2019 23:59:59 GMT+07:00
 
-    // TIIM team allocation & holding variables
-    uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                            // allocate for team : 9% = 45,000,000 TIIM
+    // SIRO team allocation & holding variables
+    uint    public constant teamAllocation = 45 * MILLION_SIRO_UNIT;                            // allocate for team : 9% = 45,000,000 SIRO
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
     uint    public maxTeamTranches = 12;                                                        // release team tokens 12 tranches every 30 days period
     
-    // TIIM founder allocation & holding variables
-    uint    public constant founderAllocation = 5 * MILLION_TIIM_UNIT;                          // allocate for founder : 1% = 5,000,000 TIIM
+    // SIRO founder allocation & holding variables
+    uint    public constant founderAllocation = 5 * MILLION_SIRO_UNIT;                          // allocate for founder : 1% = 5,000,000 SIRO
     
     
     uint    public totalFounderAllocated = 0;
@@ -427,30 +427,35 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     
     uint    public constant RELEASE_PERIOD = 30 days;
 
-    uint    public constant conversionRate = 40;                                            // 1 TOMO = 40 TIIM
+    uint    public constant conversionRate = 40;                                            // 1 TOMO = 40 SIRO
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
-    constructor(address _tiimCommunityReserveWallet, 
-                address _tiimCrowdFundAllocationWallet, 
-                address _tiimEcoWallet, 
-                address _tiimCompanyWallet,
+    public setEndTimeForTesting(uint _endTime) public onlyOwner returns (bool) {
+      endTime = _endTime;
+      return true;
+    }
+
+    constructor(address _SIROCommunityReserveWallet, 
+                address _SIROCrowdFundAllocationWallet, 
+                address _SIROEcoWallet, 
+                address _SIROCompanyWallet,
                 address _teamWallet,
                 address _founderWallet,
-                address _tiimCrowdFundTomoAllocationWallet) public {
+                address _SIROCrowdFundTomoAllocationWallet) public {
                     
-        tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
-        tiimCrowdFundAllocationWallet = _tiimCrowdFundAllocationWallet;
-        tiimEcoWallet = _tiimEcoWallet;
-        tiimCompanyWallet = _tiimCompanyWallet;
+        SIROCommunityReserveWallet = _SIROCommunityReserveWallet;
+        SIROCrowdFundAllocationWallet = _SIROCrowdFundAllocationWallet;
+        SIROEcoWallet = _SIROEcoWallet;
+        SIROCompanyWallet = _SIROCompanyWallet;
         teamWallet = _teamWallet;
         founderWallet = _founderWallet;
-        tiimCrowdFundTomoAllocationWallet = _tiimCrowdFundTomoAllocationWallet;
+        SIROCrowdFundTomoAllocationWallet = _SIROCrowdFundTomoAllocationWallet;
 
-        balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(TIIMCommunityReserveAllocation);
-        balances[tiimCrowdFundAllocationWallet] = balances[tiimCrowdFundAllocationWallet].add(TIIMCrowdFundAllocation);
-        balances[tiimEcoWallet] = balances[tiimEcoWallet].add(TIIMEcoAllocation);
-        balances[tiimCompanyWallet] = balances[tiimCompanyWallet].add(TIIMCompanyAllocation);
-        balances[tiimCrowdFundTomoAllocationWallet] = balances[tiimCrowdFundTomoAllocationWallet].add(TIIMCrowdFundTomoAllocation);
+        balances[SIROCommunityReserveWallet] = balances[SIROCommunityReserveWallet].add(SIROCommunityReserveAllocation);
+        balances[SIROCrowdFundAllocationWallet] = balances[SIROCrowdFundAllocationWallet].add(SIROCrowdFundAllocation);
+        balances[SIROEcoWallet] = balances[SIROEcoWallet].add(SIROEcoAllocation);
+        balances[SIROCompanyWallet] = balances[SIROCompanyWallet].add(SIROCompanyAllocation);
+        balances[SIROCrowdFundTomoAllocationWallet] = balances[SIROCrowdFundTomoAllocationWallet].add(SIROCrowdFundTomoAllocation);
 
         pause();
     }
@@ -550,7 +555,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     }
     
     /**
-        @dev Release TIIM Token to Team based on 12 tranches release every 30 days
+        @dev Release SIRO Token to Team based on 12 tranches release every 30 days
         @return true if successful
     */
     function releaseTeamTokens() public onlyOwner afterEndIco returns (bool) {
@@ -578,7 +583,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     }
 
     /**
-        @dev Release TIIM Token to Founder based on 24 tranches release every 30 days
+        @dev Release SIRO Token to Founder based on 24 tranches release every 30 days
         @return true if successful
     */
     function releaseFounderTokens() public onlyOwner afterEndIco returns (bool) {
@@ -645,33 +650,33 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
             _contributor.transfer(refundAmount);
         }
 
-        // subtract TIIM from tiimCrowdFundTomoAllocationWallet
-        balances[tiimCrowdFundTomoAllocationWallet] = balances[tiimCrowdFundTomoAllocationWallet].sub(tokenAmount);
-        // send TIIM to contributor address
+        // subtract SIRO from SIROCrowdFundTomoAllocationWallet
+        balances[SIROCrowdFundTomoAllocationWallet] = balances[SIROCrowdFundTomoAllocationWallet].sub(tokenAmount);
+        // send SIRO to contributor address
         balances[_contributor] = balances[_contributor].add(tokenAmount);
 
-        // send TOMO to Triip crowd funding wallet
-        tiimCrowdFundAllocationWallet.transfer(_amount);
+        // send TOMO to Siro crowd funding wallet
+        SIROCrowdFundAllocationWallet.transfer(_amount);
 
-        emit Transfer(tiimCrowdFundTomoAllocationWallet, _contributor, tokenAmount);
+        emit Transfer(SIROCrowdFundTomoAllocationWallet, _contributor, tokenAmount);
         emit Buy(_contributor, tokenAmount);
     }
 
     function publicIcoRemainingToken() public view returns (uint) {
-        return balanceOf(tiimCrowdFundTomoAllocationWallet);
+        return balanceOf(SIROCrowdFundTomoAllocationWallet);
     }
 
     function refundRemainingTokenToPatron() public afterEndIco returns (bool) {
         
         uint remainingToken = publicIcoRemainingToken();
 
-        balances[tiimCrowdFundTomoAllocationWallet] = balances[tiimCrowdFundTomoAllocationWallet].sub(remainingToken);
+        balances[SIROCrowdFundTomoAllocationWallet] = balances[SIROCrowdFundTomoAllocationWallet].sub(remainingToken);
 
-        balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(remainingToken);
+        balances[SIROCommunityReserveWallet] = balances[SIROCommunityReserveWallet].add(remainingToken);
 
-        emit Transfer(tiimCrowdFundTomoAllocationWallet, tiimCommunityReserveWallet, remainingToken);
+        emit Transfer(SIROCrowdFundTomoAllocationWallet, SIROCommunityReserveWallet, remainingToken);
 
-        emit Refund(tiimCommunityReserveWallet, remainingToken);
+        emit Refund(SIROCommunityReserveWallet, remainingToken);
 
         return true;
     }
