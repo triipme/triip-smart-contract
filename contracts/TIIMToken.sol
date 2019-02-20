@@ -27,19 +27,19 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public decimals = 18;
     string  public name = "TriipMiles";
     string  public symbol = "TIIM";
-    uint    public totalSupply = 500 * MILLION_UNIT;                                        // 500,000,000 TIIM
+    uint    public totalSupply = 500 * MILLION_TIIM_UNIT;                                        // 500,000,000 TIIM
 
     uint    public constant DECIMALS_UNIT = 18;
     uint    public constant TIIM_UNIT = 10 ** DECIMALS_UNIT;
-    uint    public constant MILLION_UNIT = 10 ** 6 * TIIM_UNIT;
+    uint    public constant MILLION_TIIM_UNIT = 10 ** 6 * TIIM_UNIT;
 
-    uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_UNIT;            // 125,000,000 TIIM
-    uint    public constant TIIMCrowdFundAllocation = 75 * MILLION_UNIT;                    // 75,000,000 TIIM - private sale & other currency
-    uint    public constant TIIMEcoAllocation = 75 * MILLION_UNIT;                          // 75,000,000 TIIM
-    uint    public constant TIIMCompanyAllocation = 85 * MILLION_UNIT;                      // 85,000,000 TIIM
-    uint    public constant TIIMTeamAllocation = 50 * MILLION_UNIT;                         // 50,000,000 TIIM
+    uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_TIIM_UNIT;            // 125,000,000 TIIM
+    uint    public constant TIIMCrowdFundAllocation = 75 * MILLION_TIIM_UNIT;                    // 75,000,000 TIIM - private sale & other currency
+    uint    public constant TIIMEcoAllocation = 75 * MILLION_TIIM_UNIT;                          // 75,000,000 TIIM
+    uint    public constant TIIMCompanyAllocation = 85 * MILLION_TIIM_UNIT;                      // 85,000,000 TIIM
+    uint    public constant TIIMTeamAllocation = 50 * MILLION_TIIM_UNIT;                         // 50,000,000 TIIM
 
-    uint    public constant TIIMCrowdFundTomoAllocation = 90 * MILLION_UNIT;                // 90,000,000 TIIM
+    uint    public constant TIIMCrowdFundTomoAllocation = 90 * MILLION_TIIM_UNIT;                // 90,000,000 TIIM
 
     address public tiimCommunityReserveWallet;
     address public tiimCrowdFundAllocationWallet;
@@ -54,14 +54,14 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public endTime = 1554051599;                                                    // March 31, 2019 11:59:59 PM GMT+07:00
 
     // TIIM team allocation & holding variables
-    uint    public constant teamAllocation = 45 * MILLION_UNIT * TIIM_UNIT;                 // allocate for team : 9% = 45,000,000 TIIM
+    uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                 // allocate for team : 9% = 45,000,000 TIIM
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
     uint    public maxTeamTranches = 12;                                                    // release team tokens 12 tranches every 30 days period
     
     // TIIM founder allocation & holding variables
-    uint    public constant founderAllocation = 5 * MILLION_UNIT * TIIM_UNIT;               // allocate for founder : 1% = 5,000,000 TIIM
+    uint    public constant founderAllocation = 5 * MILLION_TIIM_UNIT;               // allocate for founder : 1% = 5,000,000 TIIM
     
     
     uint    public totalFounderAllocated = 0;
