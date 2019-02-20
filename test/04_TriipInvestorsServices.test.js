@@ -3,7 +3,7 @@ const TriipInvestorsServices = artifacts.require("TriipInvestorsServices");
 const {
   UNIT,
   TRANSFER_GAS
-} = require("../libs/constants");
+} = require("../lib/utils");
 
 const ONE_DAY = 60 * 60 * 24
 

@@ -5,7 +5,7 @@ const TIIMToken = artifacts.require('TIIMToken');
 const {
   MILLION,
   UNIT
-} = require('../libs/constants');
+} = require('../lib/utils');
 
 const FREQUENCE_IN_SECONDS = 3600;
 const _WITHDRAWAL_DELAY_IN_SECONDS = 3600 * 48;
