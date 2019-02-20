@@ -17,7 +17,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     using SafeMath for uint;
 
     event Released(address indexed receiver, uint amount);
-    event Burn(address indexed burner, uint value);
     event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
     event Transfer(address indexed sender, address indexed _to, uint _amount, uint _enum_ordinal);
     event Buy(address indexed _contributor, uint _tiim_sold);
@@ -54,14 +53,14 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public endTime = 1554051599;                                                    // March 31, 2019 11:59:59 PM GMT+07:00
 
     // TIIM team allocation & holding variables
-    uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                 // allocate for team : 9% = 45,000,000 TIIM
+    uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                        // allocate for team : 9% = 45,000,000 TIIM
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
     uint    public maxTeamTranches = 12;                                                    // release team tokens 12 tranches every 30 days period
     
     // TIIM founder allocation & holding variables
-    uint    public constant founderAllocation = 5 * MILLION_TIIM_UNIT;               // allocate for founder : 1% = 5,000,000 TIIM
+    uint    public constant founderAllocation = 5 * MILLION_TIIM_UNIT;                      // allocate for founder : 1% = 5,000,000 TIIM
     
     
     uint    public totalFounderAllocated = 0;
@@ -93,6 +92,16 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         balances[tiimEcoWallet] = balances[tiimEcoWallet].add(TIIMEcoAllocation);
         balances[tiimCompanyWallet] = balances[tiimCompanyWallet].add(TIIMCompanyAllocation);
         balances[this] = TIIMCrowdFundTomoAllocation;
+    }
+
+    /**
+    * @dev Transfer token for a specified address
+    * @param _to The address to transfer to.
+    * @param _amount The amount to be transferred.
+    */
+    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool) {
+        super.transfer(_to, _amount);
+        return true;
     }
 
     /**
@@ -180,7 +189,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         @dev Release TIIM Token to Team based on 12 tranches release every 30 days
         @return true if successful
     */
-    function releaseTeamTokens() public returns (bool) {
+    function releaseTeamTokens() public onlyOwner returns (bool) {
 
         require(teamWallet != 0x0);
         require(totalTeamAllocated < teamAllocation);
@@ -208,7 +217,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         @dev Release TIIM Token to Founder based on 24 tranches release every 30 days
         @return true if successful
     */
-    function releaseFounderTokens() public returns (bool) {
+    function releaseFounderTokens() public onlyOwner returns (bool) {
 
         require(founderWallet != 0x0);
         require(totalFounderAllocated < founderAllocation);
@@ -247,20 +256,21 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
     function processBuy() public payable whenNotPaused {
 
-        require(remainingToken > 0, "We have not enough Token for this purchase");
-        
-        require(_contributor != address(0x0));
+        address _contributor = msg.sender;
+        uint _amount = msg.value;
+
+        require(_contributor != address(0x0), "Must have contributor wallet address");
         
         require(_amount >= (minimumContribute * 1 ether), "We only accept minimum purchase of 10 TOMO");
         
         require(!isContract(_contributor), "We do not allow buyer from contract");
 
-        address _contributor = msg.sender;
-        uint _amount = msg.value;
+        uint remainingToken = publicIcoRemainingToken();
+        
+        require(remainingToken > 0, "We have not enough Token for this purchase");
+        
         
         uint tokenAmount = _amount.mul(conversionRate);
-
-        uint remainingToken = publicIcoRemainingToken();
 
         if( tokenAmount > remainingToken ) {
 
