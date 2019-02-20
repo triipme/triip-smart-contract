@@ -9,15 +9,16 @@ module.exports = async (deployer, network, accounts) => {
   let companyWallet = accounts[3];
   let teamWallet = accounts[4];
   let founderWallet = accounts[5];
+  let tomoAllocationWallet = accounts[6];
 
   if(network == 'develop') {
     
-    deployer.deploy(TIIMToken, communityWallet, crowdFundingWallet, ecoWallet, companyWallet, teamWallet, founderWallet);
+    deployer.deploy(TIIMToken, communityWallet, crowdFundingWallet, ecoWallet, companyWallet, teamWallet, founderWallet, tomoAllocationWallet);
   
   } else {
     deployer
     .then(() => {
-      return TIIMToken.new(communityWallet, crowdFundingWallet, ecoWallet, companyWallet, teamWallet, founderWallet);
+      return TIIMToken.new(communityWallet, crowdFundingWallet, ecoWallet, companyWallet, teamWallet, founderWallet, tomoAllocationWallet);
     })
   }
   

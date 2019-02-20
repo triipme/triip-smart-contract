@@ -12,16 +12,20 @@ const TIIMToken = artifacts.require("TIIMToken");
 const {
   MILLION,
   UNIT,
-  TRANSFER_GAS
-} = require("../libs/constants");
+  TRANSFER_GAS,
+  TOTAL_SUPPLY,
+  increaseTime
+} = require("../lib/utils");
 
-const TOTAL_SUPPLY = 500 * MILLION * UNIT;
 let TIIM;
 
 let COMMUNITY_WALLET;
 let CROWD_FUNDING_WALLET;
 let ECO_WALLET;
 let COMPANY_WALLET;
+let TEAM_WALLET;
+let FOUNDER_WALLET;
+let TOMO_ALLOCATION_WALLET;
 
 contract("TIIMToken", accounts => {
   
@@ -32,11 +36,15 @@ contract("TIIMToken", accounts => {
     COMPANY_WALLET = accounts[3];
     TEAM_WALLET = accounts[4];
     FOUNDER_WALLET = accounts[5];
+    TOMO_ALLOCATION_WALLET = accounts[6];
 
-    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET);
+    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET, TOMO_ALLOCATION_WALLET);
 
-    // unpause for testing
-    await TIIM.unpause();
+    // mock: time travel to 10 days later - pass start public ICO time
+    await increaseTime(864000);
+
+    // kick start public ICO for transfer token
+    await TIIM.startPublicIco();
   });
 
   it("Total supply should be 500,000,000", async () => {
@@ -85,11 +93,31 @@ contract("TIIMToken", accounts => {
 
     assert.equal(remaining.valueOf(), 90 * MILLION * UNIT, "Should have 90m when initialization");
 
-    await TIIM.transfer(TIIM.address, 1 * MILLION * UNIT, {from : COMPANY_WALLET});
+    await TIIM.transfer(TOMO_ALLOCATION_WALLET, 1 * MILLION * UNIT, {from : COMPANY_WALLET});
 
     remaining = await TIIM.publicIcoRemainingToken();
 
     assert.equal(remaining.valueOf(), 91 * MILLION * UNIT, "Should fill up 1m and remaining has total 91m");
 
   });
+
+  it('Refund remaining token to Patron', async () => {
+
+    // mock: time travel to 60 days later - pass end public ICO time
+    await increaseTime(5184000);
+
+    const txn = await TIIM.refundRemainingTokenToPatron();
+
+    const transferEvent = txn.logs[0];
+
+    const refundEvent = txn.logs[1];
+
+    assert.equal(transferEvent.args['value'].valueOf(), 90 * MILLION * UNIT, "Should receive 90m token");
+
+    assert.equal(transferEvent.args['to'], COMMUNITY_WALLET, "Receiver should be crowd funding wallet");
+
+    assert.equal(refundEvent.args['_patron_wallet'], COMMUNITY_WALLET, "Receiver should be crowd funding wallet");
+    assert.equal(refundEvent.args['_tiim_remaining_token'], 90 * MILLION * UNIT, "Should receive 90m token");
+  });
+
 });
