@@ -70,7 +70,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     uint    public constant conversionRate = 40;                                            // 1 TOMO = 40 TIIM
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
-
     constructor(address _tiimCommunityReserveWallet, 
                 address _tiimCrowdFundAllocationWallet, 
                 address _tiimEcoWallet, 
@@ -194,7 +193,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         @dev Release TIIM Token to Team based on 12 tranches release every 30 days
         @return true if successful
     */
-    function releaseTeamTokens() public onlyOwner returns (bool) {
+    function releaseTeamTokens() public onlyOwner afterEndIco returns (bool) {
 
         require(teamWallet != 0x0);
         require(totalTeamAllocated < teamAllocation);
@@ -222,7 +221,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         @dev Release TIIM Token to Founder based on 24 tranches release every 30 days
         @return true if successful
     */
-    function releaseFounderTokens() public onlyOwner returns (bool) {
+    function releaseFounderTokens() public onlyOwner afterEndIco returns (bool) {
 
         require(founderWallet != 0x0);
         require(totalFounderAllocated < founderAllocation);
