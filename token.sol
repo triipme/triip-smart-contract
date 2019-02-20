@@ -430,7 +430,7 @@ contract SIROToken is StandardToken, Ownable, Pausable {
     uint    public constant conversionRate = 40;                                            // 1 TOMO = 40 SIRO
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
-    public setEndTimeForTesting(uint _endTime) public onlyOwner returns (bool) {
+    function setEndTimeForTesting(uint _endTime) public onlyOwner returns (bool) {
       endTime = _endTime;
       return true;
     }
