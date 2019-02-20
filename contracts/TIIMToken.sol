@@ -49,23 +49,23 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     
     bool    public stopped = false;
 
-    uint    public startTime;
-    uint    public endTime = 1554051599;                                                    // March 31, 2019 11:59:59 PM GMT+07:00
+    uint    public startTime = 1550854800;                                                      // Saturday, February 23, 2019 0:00:00 GMT+07:00
+    uint    public endTime = 1554051599;                                                        // March 31, 2019 11:59:59 PM GMT+07:00
 
     // TIIM team allocation & holding variables
-    uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                        // allocate for team : 9% = 45,000,000 TIIM
+    uint    public constant teamAllocation = 45 * MILLION_TIIM_UNIT;                            // allocate for team : 9% = 45,000,000 TIIM
     
     uint    public totalTeamAllocated = 0;
     uint    public teamTranchesReleased = 0;
-    uint    public maxTeamTranches = 12;                                                    // release team tokens 12 tranches every 30 days period
+    uint    public maxTeamTranches = 12;                                                        // release team tokens 12 tranches every 30 days period
     
     // TIIM founder allocation & holding variables
-    uint    public constant founderAllocation = 5 * MILLION_TIIM_UNIT;                      // allocate for founder : 1% = 5,000,000 TIIM
+    uint    public constant founderAllocation = 5 * MILLION_TIIM_UNIT;                          // allocate for founder : 1% = 5,000,000 TIIM
     
     
     uint    public totalFounderAllocated = 0;
     uint    public founderTranchesReleased = 0;
-    uint    public maxFounderTranches = 24;                                                 // release founder tokens 24 tranches every 30 days period
+    uint    public maxFounderTranches = 24;                                                     // release founder tokens 24 tranches every 30 days period
     
     uint    public constant RELEASE_PERIOD = 30 days;
 
@@ -92,6 +92,8 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         balances[tiimEcoWallet] = balances[tiimEcoWallet].add(TIIMEcoAllocation);
         balances[tiimCompanyWallet] = balances[tiimCompanyWallet].add(TIIMCompanyAllocation);
         balances[this] = TIIMCrowdFundTomoAllocation;
+
+        pause();
     }
 
     /**
@@ -99,7 +101,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _to The address to transfer to.
     * @param _amount The amount to be transferred.
     */
-    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool) {
+    function transfer(address _to, uint _amount) public whenNotPaused returns (bool) {
         super.transfer(_to, _amount);
         return true;
     }
@@ -109,7 +111,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _to The address to transfer to.
     * @param _amount The amount to be transferred.
     */
-    function transferAndCall(address _to, uint _amount) public returns (bool success)    {
+    function transferAndCall(address _to, uint _amount) public whenNotPaused returns (bool success)    {
         super.transfer(_to, _amount);
         
         if (isContract(_to)) {
@@ -128,7 +130,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _amount The amount to be transferred.
     * @param _data The extra data to be passed to the receiving contract.
     */
-    function transferAndCallWithData(address _to, uint _amount, bytes _data) public returns (bool success)    {
+    function transferAndCallWithData(address _to, uint _amount, bytes _data) public whenNotPaused returns (bool success)    {
         super.transfer(_to, _amount);
         
         emit Transfer(msg.sender, _to, _amount, _data);
@@ -149,7 +151,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _amount The amount to be transferred.
     * @param _enum_ordinal The enum ordinal function on receiving contract.
     */
-    function transferAndCallWithUint(address _to, uint _amount, uint _enum_ordinal) public returns (bool success)    {
+    function transferAndCallWithUint(address _to, uint _amount, uint _enum_ordinal) public whenNotPaused returns (bool success)    {
         
         super.transfer(_to, _amount);
 
@@ -175,9 +177,9 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         @dev start public ICO function
     */
     function startPublicIco() onlyOwner public {
-        require(startTime == 0, "Start time must be not setup yet");
-        startTime = now;
+        require(now >= startTime, "Start public ICO time should be after startTime");
         
+        unpause();
     }
 
     modifier afterEndIco() {
