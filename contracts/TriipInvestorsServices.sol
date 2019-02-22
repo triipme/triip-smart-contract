@@ -50,8 +50,8 @@ contract TriipInvestorsServices {
     uint decimals = 18;
     uint unit = 10 ** decimals;
     
-    uint public paymentAmount = 82 * unit; // equals to 10,000 USD upfront
-    uint public targetSellingAmount = 820 * unit; // equals to 100,000 USD upfront
+    uint public paymentAmount = 1 * unit; // equals to 10,000 USD upfront
+    uint public targetSellingAmount = 10 * unit; // equals to 100,000 USD upfront
     
     uint claimCounting = 0;
 
@@ -61,24 +61,24 @@ contract TriipInvestorsServices {
 
     // Begin: only for testing
 
-    // function setPaymentAmount(uint _paymentAmount) public returns (bool) {
-    //     paymentAmount = _paymentAmount;
-    //     return true;
-    // }
+    function setPaymentAmount(uint _paymentAmount) public returns (bool) {
+        paymentAmount = _paymentAmount;
+        return true;
+    }
 
-    // function setStartTime(uint _startTime) public returns (bool) {
-    //     startTime = _startTime;
-    //     return true;
-    // }
+    function setStartTime(uint _startTime) public returns (bool) {
+        startTime = _startTime;
+        return true;
+    }
 
-    // function setEndTime(uint _endTime) public returns (bool) {
-    //     endTime = _endTime;
-    //     return true;
-    // }
+    function setEndTime(uint _endTime) public returns (bool) {
+        endTime = _endTime;
+        return true;
+    }
 
-    // function getNow() public view returns (uint) {
-    //     return now;
-    // }
+    function getNow() public view returns (uint) {
+        return now;
+    }
 
     // End: only for testing
 
