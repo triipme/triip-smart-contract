@@ -6,6 +6,6 @@ module.exports = async (deployer, network, accounts) => {
   let seller = accounts[2];
   let buyerWallet = accounts[3];
 
-  // deployer.deploy(TriipInvestorsServices, buyer, seller, buyerWallet);
+  deployer.deploy(TriipInvestorsServices, buyer, seller, buyerWallet);
   
 };
