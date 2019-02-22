@@ -26,6 +26,7 @@ let COMPANY_WALLET;
 let TEAM_WALLET;
 let FOUNDER_WALLET;
 let TOMO_ALLOCATION_WALLET;
+let BENEFICIARY_WALLET;
 
 contract('TIIMToken', accounts => {
   
@@ -38,14 +39,15 @@ contract('TIIMToken', accounts => {
     TEAM_WALLET = accounts[4];
     FOUNDER_WALLET = accounts[5];
     TOMO_ALLOCATION_WALLET = accounts[6];
+    BENEFICIARY_WALLET = accounts[7];
 
-    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET, TOMO_ALLOCATION_WALLET);
+    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET, TOMO_ALLOCATION_WALLET, BENEFICIARY_WALLET);
 
     // mock: time travel to 10 days later - pass start public ICO time
     await increaseTime(864000);
 
     // kick start public ICO for transfer token
-    await TIIM.startPublicIco();
+    await TIIM.unpause();
   });
 
   it('Total supply should be 500m', async () => {
@@ -78,6 +80,18 @@ contract('TIIMToken', accounts => {
 
     assert.equal(balance.valueOf(), 90 * MILLION * UNIT, 'Tomo Allocation Wallet should have 90m');
   });    
+
+  it('Team vesting should be 40m = 8%', async () => {
+    const balance = await TIIM.teamAllocation();
+
+    assert.equal(balance.valueOf(), 40 * MILLION * UNIT, 'Team vesting should have 40m');
+  });
+
+  it('Founder vesting should be 10m = 2%', async () => {
+    const balance = await TIIM.founderAllocation();
+
+    assert.equal(balance.valueOf(), 10 * MILLION * UNIT, 'Team vesting should have 10m');
+  });
 
   it('Team & Founder Wallet should have nothing when contract deploy', async () => {
     const teamBalance = await TIIM.balanceOf(TEAM_WALLET);
@@ -121,17 +135,19 @@ contract('TIIMToken', accounts => {
 
     assert.equal(parseInt(eventBuy.args['_tiim_sold']) , 400 * UNIT , 'should receive 320 TIIM when purchase 10 TOMO');
 
-    // balance in TOMO 
-    var crowdFundingWalletBalance = await web3.eth.getBalance(CROWD_FUNDING_WALLET);
+    // balance beneficiary
+    var balance = await web3.eth.getBalance(BENEFICIARY_WALLET);
 
-    assert.equal(crowdFundingWalletBalance - (100 * UNIT), 10 * UNIT , 'Triip should receive 10 TOMO');
+    console.log("beneficiary's balance : ", parseInt(balance) / UNIT ) ;
+
+    assert.equal(balance, 10 * UNIT , "Triip's beneficiary should receive 10 TOMO");
 
     remaining = await TIIM.publicIcoRemainingToken();
 
     assert.equal(remaining.valueOf(), 89999600 * UNIT, 'Public ICO should remain 89,999,600 TIIM Token');
 
     // teardown
-    await web3.eth.sendTransaction({from: CROWD_FUNDING_WALLET, to: buyer, value: 10 * UNIT - TRANSFER_GAS})
+    await web3.eth.sendTransaction({from: BENEFICIARY_WALLET, to: buyer, value: 10 * UNIT - TRANSFER_GAS})
   });
 
   it('Refill 1m TIIM Token', async () => {
