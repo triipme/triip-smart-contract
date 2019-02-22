@@ -4,7 +4,8 @@ const TriipInvestorsServices = artifacts.require("TriipInvestorsServices");
 
 const {
   UNIT,
-  TRANSFER_GAS
+  TRANSFER_GAS,
+  sendEth
 } = require("../lib/utils");
 
 const ONE_DAY = 60 * 60 * 24
@@ -86,7 +87,7 @@ contract('TriipInvestorsServices claim by KPI', (accounts) => {
     var balance = parseInt(buyerBalance);
 
     if(balance > 0) {
-      await web3.eth.sendTransaction({from: buyerWallet, to: deployer, value: balance - 21000 * 1000, gasPrice:1000, gas: 21000});
+      await sendEth(buyerWallet, deployer, balance);
     }
 
     var sellerBalance = await web3.eth.getBalance(seller);
@@ -94,7 +95,7 @@ contract('TriipInvestorsServices claim by KPI', (accounts) => {
     balance = parseInt(sellerBalance);
 
     if(balance > 0) {
-      await web3.eth.sendTransaction({from: seller, to: deployer, value: balance - 21000 * 1000, gasPrice:1000, gas: 21000});
+      await sendEth(seller, deployer, balance);
     }
   });
 

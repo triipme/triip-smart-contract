@@ -7,9 +7,9 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 
 contract ERC677Receiver {
-  function onTokenTransfer(address _sender, uint _amount) public;
-  function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public;
-  function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
+  function onTokenTransfer(address _sender, uint _purchase_amount) public;
+  function onTokenTransferWithUint(address _sender, uint _purchase_amount, uint _enum_ordinal) public;
+  function onTokenTransferWithByte(address _sender, uint _purchase_amount, bytes _data) public;
 }
 
 contract TIIMToken is StandardToken, Ownable, Pausable {
@@ -17,8 +17,8 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     using SafeMath for uint;
 
     event Released(address indexed receiver, uint amount);
-    event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
-    event Transfer(address indexed sender, address indexed _to, uint _amount, uint _enum_ordinal);
+    event Transfer(address indexed sender, address indexed _to, uint _purchase_amount, bytes _data);
+    event Transfer(address indexed sender, address indexed _to, uint _purchase_amount, uint _enum_ordinal);
     event Buy(address indexed _purchaser, uint _tiim_sold);
     event Refund(address indexed _patron_wallet, uint _tiim_remaining_token);
 
@@ -109,26 +109,26 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     /**
     * @dev Transfer token for a specified address
     * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
+    * @param _purchase_amount The amount to be transferred.
     */
-    function transfer(address _to, uint _amount) public whenNotPaused returns (bool) {
-        super.transfer(_to, _amount);
+    function transfer(address _to, uint _purchase_amount) public whenNotPaused returns (bool) {
+        super.transfer(_to, _purchase_amount);
         return true;
     }
 
     /**
     * @dev transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
+    * @param _purchase_amount The amount to be transferred.
     */
-    function transferAndCall(address _to, uint _amount) public whenNotPaused returns (bool success)    {
-        transfer(_to, _amount);
+    function transferAndCall(address _to, uint _purchase_amount) public whenNotPaused returns (bool success)    {
+        transfer(_to, _purchase_amount);
         
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
             
-            receiver.onTokenTransfer(msg.sender, _amount);
+            receiver.onTokenTransfer(msg.sender, _purchase_amount);
         }
         
         return true;
@@ -137,19 +137,19 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     /**
     * @dev transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
+    * @param _purchase_amount The amount to be transferred.
     * @param _data The extra data to be passed to the receiving contract.
     */
-    function transferAndCallWithData(address _to, uint _amount, bytes _data) public whenNotPaused returns (bool success)    {
-        transfer(_to, _amount);
+    function transferAndCallWithData(address _to, uint _purchase_amount, bytes _data) public whenNotPaused returns (bool success)    {
+        transfer(_to, _purchase_amount);
         
-        emit Transfer(msg.sender, _to, _amount, _data);
+        emit Transfer(msg.sender, _to, _purchase_amount, _data);
         
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
             
-            receiver.onTokenTransferWithByte(msg.sender, _amount, _data);
+            receiver.onTokenTransferWithByte(msg.sender, _purchase_amount, _data);
         }
         
         return true;
@@ -158,20 +158,20 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     /**
     * @dev transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
+    * @param _purchase_amount The amount to be transferred.
     * @param _enum_ordinal The enum ordinal function on receiving contract.
     */
-    function transferAndCallWithUint(address _to, uint _amount, uint _enum_ordinal) public whenNotPaused returns (bool success)    {
+    function transferAndCallWithUint(address _to, uint _purchase_amount, uint _enum_ordinal) public whenNotPaused returns (bool success)    {
         
-        transfer(_to, _amount);
+        transfer(_to, _purchase_amount);
 
-        emit Transfer(msg.sender, _to, _amount, _enum_ordinal);
+        emit Transfer(msg.sender, _to, _purchase_amount, _enum_ordinal);
         
         if (isContract(_to)) {
             
             ERC677Receiver receiver = ERC677Receiver(_to);
             
-            receiver.onTokenTransferWithUint(msg.sender, _amount, _enum_ordinal);
+            receiver.onTokenTransferWithUint(msg.sender, _purchase_amount, _enum_ordinal);
         }
         
         return true;
@@ -189,7 +189,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         unpause();
     }
 
-    function refillTomoCrowdFundPublicSale(uint _amount) public onlyOwner returns (bool) {
+    function refillTokenSaleTomo(uint _purchase_amount) public onlyOwner returns (bool) {
         
 
         return true;
@@ -256,36 +256,32 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     // ------------------------------------------------------------------------
     function () public payable  {
 
-        processBuy();
+        processBuy(msg.sender, msg.value);
 
     }
 
-    function processBuy() public payable whenNotPaused {
-
-        address _purchaser = msg.sender;
-        uint _amount = msg.value;
+    function processBuy(address _purchaser, uint _purchase_amount) private {
 
         require(_purchaser != address(0x0), "Must have purchaser wallet address");
+
+        require(!isContract(_purchaser), "We do not allow purchaser from contract");
         
-        require(_amount >= (minimumPurchase * 1 ether), "We only accept minimum purchase of 10 TOMO");
-        
-        require(!isContract(_purchaser), "We do not allow buyer from contract");
+        require(_purchase_amount >= ( minimumPurchase.mul(1 ether) ), "We only accept minimum purchase is 10 TOMO");
 
         uint remainingToken = publicIcoRemainingToken();
         
-        require(remainingToken > 0, "We have not enough Token for this purchase");
+        require(remainingToken > 0, "Our token sold out");
         
-        
-        uint tokenAmount = _amount.mul(conversionRate);
+        uint tokenAmount = _purchase_amount.mul(conversionRate);
 
         if( tokenAmount > remainingToken ) {
 
             // partial sale
             tokenAmount = remainingToken;
             
-            uint refundAmount = _amount.sub(remainingToken.div(conversionRate));
+            uint refundAmount = _purchase_amount.sub(remainingToken.div(conversionRate));
 
-            _amount = _amount - refundAmount;
+            _purchase_amount = _purchase_amount.sub(refundAmount);
             
             // refund remaining Tomo to purchaser
             _purchaser.transfer(refundAmount);
@@ -293,11 +289,12 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
 
         // subtract TIIM from tiimTokenSaleTomoAllocationWallet
         balances[tiimTokenSaleTomoAllocationWallet] = balances[tiimTokenSaleTomoAllocationWallet].sub(tokenAmount);
+
         // send TIIM to purchaser address
         balances[_purchaser] = balances[_purchaser].add(tokenAmount);
 
         // send TOMO to beneficiary wallet
-        beneficiaryWallet.transfer(_amount);
+        beneficiaryWallet.transfer(_purchase_amount);
 
         emit Transfer(tiimTokenSaleTomoAllocationWallet, _purchaser, tokenAmount);
         emit Buy(_purchaser, tokenAmount);

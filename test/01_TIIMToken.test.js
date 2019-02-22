@@ -14,7 +14,8 @@ const {
   UNIT,
   TRANSFER_GAS,
   TOTAL_SUPPLY,
-  increaseTime
+  increaseTime,
+  sendEth
 } = require('../lib/utils');
 
 let TIIM;
@@ -103,16 +104,16 @@ contract('TIIMToken', accounts => {
     assert.equal(founderBalance.valueOf(), 0, 'Founder Wallet should have 0');
   });
 
-  it('Tomo conversion rate should be 1 TOMO = 40 TIIM Token', async() => {
+  it('Tomo conversion rate should be 1 TOMO = 55 TIIM Token', async() => {
     const conversionRate = await TIIM.conversionRate();
 
-    assert.equal(conversionRate, 40 , '1 TOMO should convert 40 TIIM Token');
+    assert.equal(conversionRate, 55 , '1 TOMO should convert 55 TIIM Token');
   });
 
   it('Minimum contribute should be 10 TOMO', async () => {
-    const minimumContribute = await TIIM.minimumContribute();
+    const minimumPurchase = await TIIM.minimumPurchase();
 
-    assert.equal(minimumContribute, 10, 'Minimum TOMO contribute should be 10');
+    assert.equal(minimumPurchase, 10, 'Minimum TOMO contribute should be 10');
   });
 
   it('Community reserved wallet should have 125,000,000 token', async () => {
@@ -121,7 +122,7 @@ contract('TIIMToken', accounts => {
     assert.equal(communityBalance, 125 * MILLION * UNIT);
   });
 
-  it('Purchase TIIM with tomo -> 10 TOMO = 400 TIIM - Triip Wallet should receive 10 TOMO', async () => {
+  it('Purchase TIIM with tomo -> 10 TOMO = 550 TIIM - Triip Wallet should receive 10 TOMO', async () => {
 
     const buyer = accounts[9];
 
@@ -129,22 +130,30 @@ contract('TIIMToken', accounts => {
 
     assert.equal(remaining.valueOf(), 90 * MILLION * UNIT, 'Public ICO should have 90m TIIM Token');
 
-    const txn = await TIIM.processBuy({from: buyer, value: 10 * UNIT});
+    const transactionHash = await web3.eth.sendTransaction({from: buyer, to: TIIM.address, value: 10 * UNIT})
+    // const txn = await TIIM.processBuy({from: buyer, value: 10 * UNIT});
+
+    const txn = web3.eth.getTransactionReceipt(transactionHash);
+
+    // console.log(txn);
+    // console.log(txn.logs);
+
+    console.log(txn.logs[0].topics);
 
     const eventBuy = txn.logs[1];
 
-    assert.equal(parseInt(eventBuy.args['_tiim_sold']) , 400 * UNIT , 'should receive 320 TIIM when purchase 10 TOMO');
+    assert.equal(parseInt(eventBuy.args['_tiim_sold']) , 550 * UNIT , 'should receive 320 TIIM when purchase 10 TOMO');
 
     // balance beneficiary
     var balance = await web3.eth.getBalance(BENEFICIARY_WALLET);
 
     console.log("beneficiary's balance : ", parseInt(balance) / UNIT ) ;
 
-    assert.equal(balance, 10 * UNIT , "Triip's beneficiary should receive 10 TOMO");
+    assert.equal(balance - 100 * UNIT, 10 * UNIT , "Triip's beneficiary should receive 10 TOMO");
 
     remaining = await TIIM.publicIcoRemainingToken();
 
-    assert.equal(remaining.valueOf(), 89999600 * UNIT, 'Public ICO should remain 89,999,600 TIIM Token');
+    assert.equal(remaining.valueOf(), 89999450 * UNIT, 'Public ICO should remain 89,999,450 TIIM Token');
 
     // teardown
     await web3.eth.sendTransaction({from: BENEFICIARY_WALLET, to: buyer, value: 10 * UNIT - TRANSFER_GAS})
