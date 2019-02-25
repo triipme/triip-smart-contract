@@ -50,8 +50,8 @@ contract TriipInvestorsServices {
     uint decimals = 18;
     uint unit = 10 ** decimals;
     
-    uint public paymentAmount = 1 * unit;                // 82 ETH equals to 10k USD upfront, fixed at deploy of contract manually
-    uint public targetSellingAmount = 10 * unit; // ETH equals to 100k USD upfront
+    uint public paymentAmount = 70 * unit;                // 70 ETH equals to 10k USD upfront, fixed at deploy of contract manually
+    uint public targetSellingAmount = 10 * paymentAmount; // 700 ETH equals to 100k USD upfront
     
     uint claimCounting = 0;
 
@@ -61,24 +61,24 @@ contract TriipInvestorsServices {
 
     // Begin: only for testing
 
-    function setPaymentAmount(uint _paymentAmount) public returns (bool) {
-        paymentAmount = _paymentAmount;
-        return true;
-    }
+    // function setPaymentAmount(uint _paymentAmount) public returns (bool) {
+    //     paymentAmount = _paymentAmount;
+    //     return true;
+    // }
 
-    function setStartTime(uint _startTime) public returns (bool) {
-        startTime = _startTime;
-        return true;
-    }
+    // function setStartTime(uint _startTime) public returns (bool) {
+    //     startTime = _startTime;
+    //     return true;
+    // }
 
-    function setEndTime(uint _endTime) public returns (bool) {
-        endTime = _endTime;
-        return true;
-    }
+    // function setEndTime(uint _endTime) public returns (bool) {
+    //     endTime = _endTime;
+    //     return true;
+    // }
 
-    function getNow() public view returns (uint) {
-        return now;
-    }
+    // function getNow() public view returns (uint) {
+    //     return now;
+    // }
 
     // End: only for testing
 
