@@ -5,14 +5,14 @@ pragma solidity ^0.4.25;
 /** Reach 100k before 45 days -> payoff immediately through `claim` function */
 
 /** 
-Pay 4k installment fee immediately after startTime (confirm purchased) `ONE day` (through claim4k)
+Total installment fee is 10k, pay 4k installment fee immediately after startTime (confirm purchased) `ONE day` (through claim4k)
 
-Remaining installment fee will be paid dependTime on KPI below:
+6k Remaining installment fee will be paid dependTime on KPI below:
     
     - Trunk payment period when reach partial KPI
         * 0 -> 15 date reach >=25k -> 1/3 Remaining Installment Fee
-        * 15 -> 30 date reach >=25k -> 1/3 Remaining Installment Fee
-        * 45  reach >=25k -> 1/3 Remaining Installment Fee
+        * 15 -> 30 date reach >=50k -> 1/3 Remaining Installment Fee
+        * 45  reach >=100k -> 1/3 Remaining Installment Fee
         
     NOTE: Remaining ETH will refund to Triip through `refund` function at endTime of this campaign
 */
