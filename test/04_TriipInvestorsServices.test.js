@@ -103,12 +103,12 @@ contract('TriipInvestorsServices claim by KPI', (accounts) => {
 
     try {
       
-      await investorService.claim4k();
+      await investorService.claimFirstInstallment();
 
       assert(false, 'Should not come here');
 
     } catch (err) {
-      assert.include(err.message, 'revert Require first claim 4k after startTime One day');
+      assert.include(err.message, 'revert Require first installment fee to be claimed after startTime + 1 day');
     }
   });
 
@@ -118,7 +118,7 @@ contract('TriipInvestorsServices claim by KPI', (accounts) => {
 
     await investorService.setStartTime( parseInt(startTime) - 172800 );
 
-    const txn =   await investorService.claim4k();
+    const txn =   await investorService.claimFirstInstallment();
 
     const eventPayoff = txn.logs[0].args;
 

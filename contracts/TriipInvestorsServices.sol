@@ -1,18 +1,18 @@
 pragma solidity ^0.4.25;
 
-/** KPI is 100k target selling period is 45 days*/
+/** KPI is 100k USD (~ETH rate fix at start of contract) target selling period is 45 days*/
 
-/** Reach 100k before 45 days -> payoff immediately through `claim` function */
+/** If NCryptBit reached 100k before 45 days -> payoff immediately 10% commission through `claim` function */
 
 /** 
-Total installment fee is 10k, pay 4k installment fee immediately after startTime (confirm purchased) `ONE day` (through claim4k)
+Pay 4k USD (in ETH) first installment of comission fee immediately after startTime (confirm purchased) `ONE day` (through claimFirstInstallment())
 
-6k Remaining installment fee will be paid dependTime on KPI below:
+Remaining installment fee will be paid dependTime on KPI below:
     
     - Trunk payment period when reach partial KPI
-        * 0 -> 15 date reach >=25k -> 1/3 Remaining Installment Fee
-        * 15 -> 30 date reach >=50k -> 1/3 Remaining Installment Fee
-        * 45  reach >=100k -> 1/3 Remaining Installment Fee
+        * 0 -> 15 date reach >=25k -> 1/3 Remaining Installment Fee (~2k USD)
+        * 15 -> 30 date reach >=25k -> 1/3 Remaining Installment Fee (~2k USD)
+        * 45  reach >=25k -> 1/3 Remaining Installment Fee (~2k USD)
         
     NOTE: Remaining ETH will refund to Triip through `refund` function at endTime of this campaign
 */
@@ -39,8 +39,8 @@ contract TriipInvestorsServices {
     uint public KPI_50k = 50;
     uint public KPI_100k = 100;    
     
-    address public buyer; // Triip Protocol wallet use for refunding
     address public seller; // NCriptBit
+    address public buyer;  // Triip Protocol wallet use for refunding
     address public buyerWallet; // Triip Protocol's raising ETH wallet
     
     uint public startTime = 0;
@@ -50,8 +50,8 @@ contract TriipInvestorsServices {
     uint decimals = 18;
     uint unit = 10 ** decimals;
     
-    uint public paymentAmount = 1 * unit; // equals to 10,000 USD upfront
-    uint public targetSellingAmount = 10 * unit; // equals to 100,000 USD upfront
+    uint public paymentAmount = 1 * unit;                // 82 ETH equals to 10k USD upfront, fixed at deploy of contract manually
+    uint public targetSellingAmount = 10 * unit; // ETH equals to 100k USD upfront
     
     uint claimCounting = 0;
 
@@ -87,7 +87,7 @@ contract TriipInvestorsServices {
         seller = _seller;
         buyer = _buyer;
         buyerWallet = _buyerWallet;
-        
+
     }
 
     modifier whenNotEnd() {
@@ -95,16 +95,16 @@ contract TriipInvestorsServices {
         _;
     }
 
-    function confirmPurchase() public payable {
-        
+    function confirmPurchase() public payable { // Trigger by Triip with the ETH amount agreed for installment
+
         require(startTime == 0);
-        
+
         require(msg.value == paymentAmount, "Not equal installment fee");
-        
+
         startTime = now;
-        
+
         endTime = startTime + ( 45 * 1 days );
-        
+
         balance += msg.value;
 
         emit ConfirmPurchase(msg.sender, startTime, balance);
@@ -120,17 +120,19 @@ contract TriipInvestorsServices {
         return address(buyerWallet).balance;
     }
 
-    function claim4k() public whenNotEnd returns (bool) {
+    function claimFirstInstallment() public whenNotEnd returns (bool) {
 
-        require(now >= startTime + 1 days, "Require first claim 4k after startTime One day");
-            
-        uint payoffAmount = balance * 40 / 100;
+        require(paidStage == PaidStage.NONE, "First installment has already been claimed");
+
+        require(now >= startTime + 1 days, "Require first installment fee to be claimed after startTime + 1 day");
+
+        uint payoffAmount = balance * 40 / 100; // 40% of agreed commission
 
         // update balance
-        balance = balance - payoffAmount;
-        
-        seller.transfer(payoffAmount);
-        
+        balance = balance - payoffAmount; // ~5k gas as of writing
+
+        seller.transfer(payoffAmount); // ~21k gas as of writing
+
         emit Payoff(seller, payoffAmount, KPI_0k );
         emit Claim(msg.sender, claimCounting, buyerWalletBalance());
 
@@ -165,7 +167,7 @@ contract TriipInvestorsServices {
             payoffAmount = claimByKPI();
 
         }
-        
+
         return payoffAmount;
     }
 
@@ -180,9 +182,9 @@ contract TriipInvestorsServices {
             ) {
 
             uint paidPercent = 66;
-            
+
             if ( paidStage == PaidStage.NONE) {
-                paidPercent = 66;
+                paidPercent = 66; // 66% of 6k installment equals 4k
             }else if( paidStage == PaidStage.FIRST_PAYMENT) {
                 // 33 % of total balance
                 // 50% of remaining balance
@@ -193,7 +195,7 @@ contract TriipInvestorsServices {
 
             // update balance
             balance = balance - payoffAmount;
-            
+
             seller.transfer(payoffAmount);
 
             emit Payoff(seller, payoffAmount, KPI_50k);
@@ -204,20 +206,20 @@ contract TriipInvestorsServices {
         if( buyerBalance >= ( sellingAmount * KPI_25k / 100) 
             && now >= (startTime + (15 * 1 days) )
             && paidStage == PaidStage.NONE ) {
-          
+
             payoffAmount = balance * 33 / 100;
 
             // update balance
             balance = balance - payoffAmount;
-            
+
             seller.transfer(payoffAmount);
 
             emit Payoff(seller, payoffAmount, KPI_25k );
 
             paidStage = PaidStage.FIRST_PAYMENT;
-            
-        } 
-        
+
+        }
+
         if(now >= (startTime + (45 * 1 days) )) {
 
             endContract();
@@ -227,23 +229,20 @@ contract TriipInvestorsServices {
     }
 
     function endContract() private {
-        
         isEnd = true;
     }
     
     function refund() public returns (uint) {
-        
+
         require(now >= endTime);
 
-        claim();
-        
         // refund remaining balance
         uint refundAmount = address(this).balance;
-        
+
         buyer.transfer(refundAmount);
-        
+
         emit Refund(buyer, refundAmount);
-        
+
         return refundAmount;
     }
 }
