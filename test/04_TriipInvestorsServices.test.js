@@ -222,6 +222,34 @@ contract('TriipInvestorsServices claim by KPI', (accounts) => {
 
   });
 
+  it('Claim when seller reach 60k KPI in 20 days should receive 33/100 installment fee', async () => {
+
+    // mock : send 6 ETH to buyerWallet to reach 25k KPI
+    await web3.eth.sendTransaction({from: accounts[8], to: buyerWallet, value: 6 * UNIT})
+
+    const startTime = await investorService.startTime();
+
+    const day20th = 20 * 24 * 60 * 60;
+    await investorService.setStartTime( parseInt(startTime) - day20th );
+
+    // 33%
+    const txn = await investorService.claim()
+
+    const claimEvent = txn.logs[0]
+    const payoffEvent = txn.logs[1]
+
+    assert.equal(parseInt(claimEvent.args['_buyerWalletBalance'].valueOf()) , 6 * UNIT);
+
+    assert.equal(parseInt(payoffEvent.args['_amount'])/UNIT , 0.33, 'Seller should receive 33% of current balance');
+
+    assert.equal(parseInt(payoffEvent.args['_kpi']), 25, "Should be 25k KPI");
+
+    // teardown
+    await web3.eth.sendTransaction({from: buyerWallet, to: accounts[8], value: 6 * UNIT - 21000 * 1000, gasPrice:1000, gas: 21000})
+    await web3.eth.sendTransaction({from: seller, to: deployer, value: INSTALLMENT_FEE * 33 / 100 - 21000 * 1000, gasPrice:1000, gas: 21000})
+
+  });
+
   it('Refund remaining balance', async() => {
     
   });
