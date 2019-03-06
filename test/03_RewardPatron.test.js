@@ -176,15 +176,11 @@ contract('Reward Patron Testing', accounts => {
 
     // const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
 
-    // console.log(b);
-
     await PATRON.setRewardPatron(REWARD_PATRON.address);
 
     await PATRON.testClaim(ANONYMOUS, 100);
     
     const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
-
-    console.log(b);
 
   })
 });
