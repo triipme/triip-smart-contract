@@ -19,8 +19,6 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     event Released(address indexed receiver, uint amount);
     event Transfer(address indexed sender, address indexed _to, uint _purchase_amount, bytes _data);
     event Transfer(address indexed sender, address indexed _to, uint _purchase_amount, uint _enum_ordinal);
-    event Buy(address indexed _purchaser, uint _tiim_sold);
-    event Refund(address indexed _patron_wallet, uint _tiim_remaining_token);
 
     uint    public decimals = 18;
     string  public name = "TriipMiles";
@@ -46,10 +44,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     address public tiimCompanyReserveWallet;
     address public teamWallet;
     address public founderWallet;
-    address public tiimTokenSaleTomoAllocationWallet;
-    address public beneficiaryWallet;                                                           // TOMO receiver
 
-    uint    public startTime = 1550854800;                                                      // February 23, 2019 0:00:00 GMT+07:00
     uint    public endTime = 1554051599;                                                        // March 31, 2019 23:59:59 GMT+07:00
 
     // TIIM team allocation & holding variables
@@ -68,17 +63,12 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     
     uint    public constant RELEASE_PERIOD = 30 days;
 
-    uint    public constant conversionRate = 55;                                                // 1 TOMO = 55 TIIM
-    uint    public constant minimumPurchase = 10;                                               // Purchase amount has to be equal or greater than 10 TOMO
-
     constructor(address _tiimCommunityReserveWallet, 
                 address _tiimCrowdFundAllocationWallet, 
                 address _tiimEcoWallet, 
                 address _tiimCompanyReserveWallet,
                 address _teamWallet,
-                address _founderWallet,
-                address _tiimTomoCrowdFundAllocationWallet,
-                address _beneficiaryWallet) public {
+                address _founderWallet) public {
                     
         tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
         tiimTokenSaleAllocationWallet = _tiimCrowdFundAllocationWallet;
@@ -86,16 +76,11 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         tiimCompanyReserveWallet = _tiimCompanyReserveWallet;
         teamWallet = _teamWallet;
         founderWallet = _founderWallet;
-        tiimTokenSaleTomoAllocationWallet = _tiimTomoCrowdFundAllocationWallet;
-        beneficiaryWallet = _beneficiaryWallet;
 
         balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(TIIMCommunityReserveAllocation);
         balances[tiimTokenSaleAllocationWallet] = balances[tiimTokenSaleAllocationWallet].add(TIIMTokenSaleAllocation);
         balances[tiimEcosystemWallet] = balances[tiimEcosystemWallet].add(TIIMEcosystemAllocation);
         balances[tiimCompanyReserveWallet] = balances[tiimCompanyReserveWallet].add(TIIMCompanyReserveAllocation);
-        balances[tiimTokenSaleTomoAllocationWallet] = balances[tiimTokenSaleTomoAllocationWallet].add(TIIMTokenSaleTomoAllocation);
-
-        pause();
     }
 
     /**
@@ -122,7 +107,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _purchase_amount The amount to be transferred.
     */
     function transferAndCall(address _to, uint _purchase_amount) public whenNotPaused returns (bool success)    {
-        transfer(_to, _purchase_amount);
+        super.transfer(_to, _purchase_amount);
         
         if (isContract(_to)) {
             
@@ -141,7 +126,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     * @param _data The extra data to be passed to the receiving contract.
     */
     function transferAndCallWithData(address _to, uint _purchase_amount, bytes _data) public whenNotPaused returns (bool success)    {
-        transfer(_to, _purchase_amount);
+        super.transfer(_to, _purchase_amount);
         
         emit Transfer(msg.sender, _to, _purchase_amount, _data);
         
@@ -163,7 +148,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
     */
     function transferAndCallWithUint(address _to, uint _purchase_amount, uint _enum_ordinal) public whenNotPaused returns (bool success)    {
         
-        transfer(_to, _purchase_amount);
+        super.transfer(_to, _purchase_amount);
 
         emit Transfer(msg.sender, _to, _purchase_amount, _enum_ordinal);
         
@@ -182,24 +167,12 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         assembly { length := extcodesize(_addr) }
         return length > 0;
     }
-
-    function endPublicIco() onlyOwner afterEndIco public {
-        require(now >= endTime, "Should be after end time ICO");
-        // allow transfer
-        unpause();
-    }
-
-    function refillTokenSaleTomo(uint _purchase_amount) public onlyOwner returns (bool) {
-        
-
-        return true;
-    }
     
     /**
         @dev Release TIIM Token to Team based on 12 tranches release every 30 days
         @return true if successful
     */
-    function releaseTeamTokens() public onlyOwner afterEndIco returns (bool) {
+    function releaseTeamTokens() public onlyOwner returns (bool) {
 
         require(teamWallet != 0x0);
         require(totalTeamAllocated < teamAllocation);
@@ -227,7 +200,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         @dev Release TIIM Token to Founder based on 24 tranches release every 30 days
         @return true if successful
     */
-    function releaseFounderTokens() public onlyOwner afterEndIco returns (bool) {
+    function releaseFounderTokens() public onlyOwner returns (bool) {
 
         require(founderWallet != 0x0);
         require(totalFounderAllocated < founderAllocation);
@@ -251,71 +224,4 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         return true;
     }
 
-    // ------------------------------------------------------------------------
-    // Accept TOMO
-    // ------------------------------------------------------------------------
-    function () public payable  {
-
-        processBuy(msg.sender, msg.value);
-
-    }
-
-    function processBuy(address _purchaser, uint _purchase_amount) private {
-
-        require(_purchaser != address(0x0), "Must have purchaser wallet address");
-
-        require(!isContract(_purchaser), "We do not allow purchaser from contract");
-        
-        require(_purchase_amount >= ( minimumPurchase.mul(1 ether) ), "We only accept minimum purchase is 10 TOMO");
-
-        uint remainingToken = publicIcoRemainingToken();
-        
-        require(remainingToken > 0, "Our token sold out");
-        
-        uint tokenAmount = _purchase_amount.mul(conversionRate);
-
-        if( tokenAmount > remainingToken ) {
-
-            // partial sale
-            tokenAmount = remainingToken;
-            
-            uint refundAmount = _purchase_amount.sub(remainingToken.div(conversionRate));
-
-            _purchase_amount = _purchase_amount.sub(refundAmount);
-            
-            // refund remaining Tomo to purchaser
-            _purchaser.transfer(refundAmount);
-        }
-
-        // subtract TIIM from tiimTokenSaleTomoAllocationWallet
-        balances[tiimTokenSaleTomoAllocationWallet] = balances[tiimTokenSaleTomoAllocationWallet].sub(tokenAmount);
-
-        // send TIIM to purchaser address
-        balances[_purchaser] = balances[_purchaser].add(tokenAmount);
-
-        // send TOMO to beneficiary wallet
-        beneficiaryWallet.transfer(_purchase_amount);
-
-        emit Transfer(tiimTokenSaleTomoAllocationWallet, _purchaser, tokenAmount);
-        emit Buy(_purchaser, tokenAmount);
-    }
-
-    function publicIcoRemainingToken() public view returns (uint) {
-        return balanceOf(tiimTokenSaleTomoAllocationWallet);
-    }
-
-    function refundRemainingTokenToPatron() public afterEndIco returns (bool) {
-        
-        uint remainingToken = publicIcoRemainingToken();
-
-        balances[tiimTokenSaleTomoAllocationWallet] = balances[tiimTokenSaleTomoAllocationWallet].sub(remainingToken);
-
-        balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(remainingToken);
-
-        emit Transfer(tiimTokenSaleTomoAllocationWallet, tiimCommunityReserveWallet, remainingToken);
-
-        emit Refund(tiimCommunityReserveWallet, remainingToken);
-
-        return true;
-    }
 }
