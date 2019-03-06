@@ -16,10 +16,9 @@ let ECO_WALLET;
 let COMPANY_WALLET;
 let TEAM_WALLET;
 let FOUNDER_WALLET;
-let TOMO_ALLOCATION_WALLET;
 let ANONYMOUS;
 
-contract('TIIMToken', accounts => {
+contract('TIIMToken team vesting', accounts => {
   
   beforeEach('TIIM Token init', async () => {
     
@@ -29,16 +28,10 @@ contract('TIIMToken', accounts => {
     COMPANY_WALLET = accounts[3];
     TEAM_WALLET = accounts[4];
     FOUNDER_WALLET = accounts[5];
-    TOMO_ALLOCATION_WALLET = accounts[6];
     ANONYMOUS = accounts[7];
 
-    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET, TOMO_ALLOCATION_WALLET);
+    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET);
 
-    // mock: time travel to 10 days later - pass start public ICO time
-    await increaseTime(864000);
-
-    // kick start public ICO for transfer token
-    await TIIM.startPublicIco();
   });
 
   it('Anomyous call release team or founder token should get error message', async () => {

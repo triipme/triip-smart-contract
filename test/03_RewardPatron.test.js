@@ -22,6 +22,8 @@ let COMMUNITY_WALLET;
 let CROWD_FUNDING_WALLET;
 let ECO_WALLET;
 let COMPANY_WALLET;
+let TEAM_WALLET;
+let FOUNDER_WALLET;
 let ANONYMOUS;
 
 contract('Reward Patron Testing', accounts => {
@@ -34,9 +36,11 @@ contract('Reward Patron Testing', accounts => {
     CROWD_FUNDING_WALLET = accounts[1];
     ECO_WALLET = accounts[2];
     COMPANY_WALLET = accounts[3];
+    TEAM_WALLET = accounts[4];
+    FOUNDER_WALLET = accounts[5];
     ANONYMOUS = accounts[9];
 
-    TIIM_TOKEN = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET);
+    TIIM_TOKEN = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET);
 
     PATRON = await Patron.new();
 

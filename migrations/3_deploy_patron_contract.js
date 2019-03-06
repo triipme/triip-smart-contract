@@ -5,8 +5,8 @@ const SLEEP = 15000;
 
 module.exports = async (deployer, network, accounts) => {
 
-  // deployer.deploy(Patron);
+  deployer.deploy(Patron);
   
-  // deployer.deploy(RewardPatron);
+  deployer.deploy(RewardPatron);
   
 };

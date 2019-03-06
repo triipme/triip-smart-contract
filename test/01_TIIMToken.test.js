@@ -26,8 +26,6 @@ let ECO_WALLET;
 let COMPANY_WALLET;
 let TEAM_WALLET;
 let FOUNDER_WALLET;
-let TOMO_ALLOCATION_WALLET;
-let BENEFICIARY_WALLET;
 
 contract('TIIMToken', accounts => {
   
@@ -39,16 +37,9 @@ contract('TIIMToken', accounts => {
     COMPANY_WALLET = accounts[3];
     TEAM_WALLET = accounts[4];
     FOUNDER_WALLET = accounts[5];
-    TOMO_ALLOCATION_WALLET = accounts[6];
-    BENEFICIARY_WALLET = accounts[7];
 
-    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET, TOMO_ALLOCATION_WALLET, BENEFICIARY_WALLET);
+    TIIM = await TIIMToken.new(COMMUNITY_WALLET, CROWD_FUNDING_WALLET, ECO_WALLET, COMPANY_WALLET, TEAM_WALLET, FOUNDER_WALLET);
 
-    // mock: time travel to 10 days later - pass start public ICO time
-    await increaseTime(864000);
-
-    // kick start public ICO for transfer token
-    await TIIM.unpause();
   });
 
   it('Total supply should be 500m', async () => {
@@ -76,12 +67,6 @@ contract('TIIMToken', accounts => {
     assert.equal(balance.valueOf(), 85 * MILLION * UNIT, 'Company Wallet should have 85m');
   });  
   
-  it('TOMO Allocation Wallet should be 90m', async () => {
-    const balance = await TIIM.balanceOf(TOMO_ALLOCATION_WALLET);
-
-    assert.equal(balance.valueOf(), 90 * MILLION * UNIT, 'Tomo Allocation Wallet should have 90m');
-  });    
-
   it('Team vesting should be 40m = 8%', async () => {
     const balance = await TIIM.teamAllocation();
 
@@ -104,92 +89,80 @@ contract('TIIMToken', accounts => {
     assert.equal(founderBalance.valueOf(), 0, 'Founder Wallet should have 0');
   });
 
-  it('Tomo conversion rate should be 1 TOMO = 55 TIIM Token', async() => {
-    const conversionRate = await TIIM.conversionRate();
-
-    assert.equal(conversionRate, 55 , '1 TOMO should convert 55 TIIM Token');
-  });
-
-  it('Minimum contribute should be 10 TOMO', async () => {
-    const minimumPurchase = await TIIM.minimumPurchase();
-
-    assert.equal(minimumPurchase, 10, 'Minimum TOMO contribute should be 10');
-  });
-
   it('Community reserved wallet should have 125,000,000 token', async () => {
     const communityBalance = await TIIM.balanceOf(COMMUNITY_WALLET);
 
     assert.equal(communityBalance, 125 * MILLION * UNIT);
   });
 
-  it('Purchase TIIM with tomo -> 10 TOMO = 550 TIIM - Triip Wallet should receive 10 TOMO', async () => {
+  // it('Purchase TIIM with tomo -> 10 TOMO = 550 TIIM - Triip Wallet should receive 10 TOMO', async () => {
 
-    const buyer = accounts[9];
+  //   const buyer = accounts[9];
 
-    var remaining = await TIIM.publicIcoRemainingToken();
+  //   var remaining = await TIIM.publicIcoRemainingToken();
 
-    assert.equal(remaining.valueOf(), 90 * MILLION * UNIT, 'Public ICO should have 90m TIIM Token');
+  //   assert.equal(remaining.valueOf(), 90 * MILLION * UNIT, 'Public ICO should have 90m TIIM Token');
 
-    const transactionHash = await web3.eth.sendTransaction({from: buyer, to: TIIM.address, value: 10 * UNIT})
-    // const txn = await TIIM.processBuy({from: buyer, value: 10 * UNIT});
+  //   const transactionHash = await web3.eth.sendTransaction({from: buyer, to: TIIM.address, value: 10 * UNIT})
+  //   // const txn = await TIIM.processBuy({from: buyer, value: 10 * UNIT});
 
-    const txn = web3.eth.getTransactionReceipt(transactionHash);
+  //   const txn = web3.eth.getTransactionReceipt(transactionHash);
 
-    // console.log(txn);
-    // console.log(txn.logs);
+  //   // console.log(txn);
+  //   // console.log(txn.logs);
 
-    console.log(txn.logs[0].topics);
+  //   console.log(txn.logs[0].topics);
 
-    const eventBuy = txn.logs[1];
+  //   const eventBuy = txn.logs[1];
 
-    assert.equal(parseInt(eventBuy.args['_tiim_sold']) , 550 * UNIT , 'should receive 320 TIIM when purchase 10 TOMO');
+  //   assert.equal(parseInt(eventBuy.args['_tiim_sold']) , 550 * UNIT , 'should receive 320 TIIM when purchase 10 TOMO');
 
-    // balance beneficiary
-    var balance = await web3.eth.getBalance(BENEFICIARY_WALLET);
+  //   // balance beneficiary
+  //   var balance = await web3.eth.getBalance(BENEFICIARY_WALLET);
 
-    console.log("beneficiary's balance : ", parseInt(balance) / UNIT ) ;
+  //   console.log("beneficiary's balance : ", parseInt(balance) / UNIT ) ;
 
-    assert.equal(balance - 100 * UNIT, 10 * UNIT , "Triip's beneficiary should receive 10 TOMO");
+  //   assert.equal(balance - 100 * UNIT, 10 * UNIT , "Triip's beneficiary should receive 10 TOMO");
 
-    remaining = await TIIM.publicIcoRemainingToken();
+  //   remaining = await TIIM.publicIcoRemainingToken();
 
-    assert.equal(remaining.valueOf(), 89999450 * UNIT, 'Public ICO should remain 89,999,450 TIIM Token');
+  //   assert.equal(remaining.valueOf(), 89999450 * UNIT, 'Public ICO should remain 89,999,450 TIIM Token');
 
-    // teardown
-    await web3.eth.sendTransaction({from: BENEFICIARY_WALLET, to: buyer, value: 10 * UNIT - TRANSFER_GAS})
-  });
+  //   // teardown
+  //   await web3.eth.sendTransaction({from: BENEFICIARY_WALLET, to: buyer, value: 10 * UNIT - TRANSFER_GAS})
+  // });
 
-  it('Refill 1m TIIM Token', async () => {
+  // it('Refill 1m TIIM Token', async () => {
 
-    var remaining = await TIIM.publicIcoRemainingToken();
+  //   var remaining = await TIIM.publicIcoRemainingToken();
 
-    assert.equal(remaining.valueOf(), 90 * MILLION * UNIT, 'Should have 90m when initialization');
+  //   assert.equal(remaining.valueOf(), 90 * MILLION * UNIT, 'Should have 90m when initialization');
 
-    await TIIM.transfer(TOMO_ALLOCATION_WALLET, 1 * MILLION * UNIT, {from : COMPANY_WALLET});
+  //   await TIIM.transfer(TOMO_ALLOCATION_WALLET, 1 * MILLION * UNIT, {from : COMPANY_WALLET});
 
-    remaining = await TIIM.publicIcoRemainingToken();
+  //   remaining = await TIIM.publicIcoRemainingToken();
 
-    assert.equal(remaining.valueOf(), 91 * MILLION * UNIT, 'Should fill up 1m and remaining has total 91m');
+  //   assert.equal(remaining.valueOf(), 91 * MILLION * UNIT, 'Should fill up 1m and remaining has total 91m');
 
-  });
+  // });
 
-  it('Refund remaining token to Patron', async () => {
+  // it('Refund remaining token to Patron', async () => {
 
-    // mock: time travel to 60 days later - pass end public ICO time
-    await increaseTime(5184000);
+  //   // mock: time travel to 60 days later - pass end public ICO time
+  //   await increaseTime(5184000);
 
-    const txn = await TIIM.refundRemainingTokenToPatron();
+  //   const txn = await TIIM.refundRemainingTokenToPatron();
 
-    const transferEvent = txn.logs[0];
+  //   const transferEvent = txn.logs[0];
 
-    const refundEvent = txn.logs[1];
+  //   const refundEvent = txn.logs[1];
 
-    assert.equal(transferEvent.args['value'].valueOf(), 90 * MILLION * UNIT, 'Should receive 90m token');
+  //   assert.equal(transferEvent.args['value'].valueOf(), 90 * MILLION * UNIT, 'Should receive 90m token');
 
-    assert.equal(transferEvent.args['to'], COMMUNITY_WALLET, 'Receiver should be crowd funding wallet');
+  //   assert.equal(transferEvent.args['to'], COMMUNITY_WALLET, 'Receiver should be crowd funding wallet');
 
-    assert.equal(refundEvent.args['_patron_wallet'], COMMUNITY_WALLET, 'Receiver should be crowd funding wallet');
-    assert.equal(refundEvent.args['_tiim_remaining_token'], 90 * MILLION * UNIT, 'Should receive 90m token');
-  });
+  //   assert.equal(refundEvent.args['_patron_wallet'], COMMUNITY_WALLET, 'Receiver should be crowd funding wallet');
+  //   assert.equal(refundEvent.args['_tiim_remaining_token'], 90 * MILLION * UNIT, 'Should receive 90m token');
+  // });
 
 });
