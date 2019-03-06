@@ -165,22 +165,22 @@ contract('Reward Patron Testing', accounts => {
     }
   });
 
-  it('Test reward send token out', async() => {
-    await TIIM_TOKEN.transfer(REWARD_PATRON.address, REWARD_EXPECTED_BALANCE, {from: OWNER});
+  // it('Test reward send token out', async() => {
+  //   await TIIM_TOKEN.transfer(REWARD_PATRON.address, REWARD_EXPECTED_BALANCE, {from: OWNER});
     
-    const rewardBalance = await TIIM_TOKEN.balanceOf(REWARD_PATRON.address);
+  //   const rewardBalance = await TIIM_TOKEN.balanceOf(REWARD_PATRON.address);
 
-    assert.equal(rewardBalance, REWARD_EXPECTED_BALANCE);
+  //   assert.equal(rewardBalance, REWARD_EXPECTED_BALANCE);
     
-    // await REWARD_PATRON.claimReward(ANONYMOUS, 100);
+  //   // await REWARD_PATRON.claimReward(ANONYMOUS, 100);
 
-    // const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
+  //   // const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
 
-    await PATRON.setRewardPatron(REWARD_PATRON.address);
+  //   await PATRON.setRewardPatron(REWARD_PATRON.address);
 
-    await PATRON.testClaim(ANONYMOUS, 100);
+  //   await PATRON.testClaim(ANONYMOUS, 100);
     
-    const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
+  //   const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
 
-  })
+  // })
 });
