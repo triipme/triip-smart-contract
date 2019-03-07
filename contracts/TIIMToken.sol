@@ -6,9 +6,9 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 
-contract ERC677Receiver {
+contract Receiver {
   function onTokenTransfer(address _sender, uint _purchase_amount) public;
-  function onTokenTransferWithUint(address _sender, uint _purchase_amount, uint _enum_ordinal) public;
+  function onTokenTransferWithUint(address _sender, uint _purchase_amount, uint _value) public;
   function onTokenTransferWithByte(address _sender, uint _purchase_amount, bytes _data) public;
 }
 
@@ -111,7 +111,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         
         if (isContract(_to)) {
             
-            ERC677Receiver receiver = ERC677Receiver(_to);
+            Receiver receiver = Receiver(_to);
             
             receiver.onTokenTransfer(msg.sender, _purchase_amount);
         }
@@ -132,7 +132,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         
         if (isContract(_to)) {
             
-            ERC677Receiver receiver = ERC677Receiver(_to);
+            Receiver receiver = Receiver(_to);
             
             receiver.onTokenTransferWithByte(msg.sender, _purchase_amount, _data);
         }
@@ -154,7 +154,7 @@ contract TIIMToken is StandardToken, Ownable, Pausable {
         
         if (isContract(_to)) {
             
-            ERC677Receiver receiver = ERC677Receiver(_to);
+            Receiver receiver = Receiver(_to);
             
             receiver.onTokenTransferWithUint(msg.sender, _purchase_amount, _enum_ordinal);
         }

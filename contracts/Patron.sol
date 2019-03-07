@@ -6,9 +6,9 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 
-contract ERC677Receiver {
+contract Receiver {
   function onTokenTransfer(address _sender, uint _amount) public;
-  function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public;
+  function onTokenTransferWithUint(address _sender, uint _amount, uint _value) public;
   function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
 }
 
@@ -39,10 +39,6 @@ contract AbstractPatron is Ownable {
         require(isContract(_tiim_token), 'TIIM Token must be a contract');
         
         tiim_token = ERC20(_tiim_token);
-
-        uint balance = tiim_token.balanceOf(this);
-
-        require(balance == 0, 'TIIM Token should have balanceOf method and its balance should be zero when setting TIIM token');
         
         emit ModifiedTiimToken(_tiim_token);
         
@@ -112,7 +108,7 @@ contract PatronSetting is AbstractPatron {
     }
 }
 
-contract Patron is AbstractPatron, ERC677Receiver {
+contract Patron is AbstractPatron, Receiver {
 
     event ModifiedPatronSetting(address indexed _patron_settings);
     event Unstake(address indexed _patron, uint _amount, uint _withdrawal_at);
@@ -159,7 +155,7 @@ contract Patron is AbstractPatron, ERC677Receiver {
         stake(_sender, _amount);
     }
 
-    function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public onlyTIIMToken { 
+    function onTokenTransferWithUint(address _sender, uint _amount, uint _value) public onlyTIIMToken { 
         stake(_sender, _amount);
     }
     function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public onlyTIIMToken {
