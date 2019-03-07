@@ -91,7 +91,7 @@ contract PatronSetting is AbstractPatron {
         emit ModifiedWithdrawalDelayInSeconds(_withdrawal_delay_in_seconds);
         return true;
     }
-
+    
     function setMinimumStakeAmount(uint _minimum_stake_amount) onlyOwner public returns (bool) {
         minimum_stake_amount = _minimum_stake_amount;
         return true;

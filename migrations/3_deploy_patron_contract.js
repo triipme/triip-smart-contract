@@ -1,5 +1,5 @@
 const Patron = artifacts.require("Patron");
-const RewardPatron = artifacts.require("RewardPatron");
+const PatronSetting = artifacts.require("PatronSetting");
 
 const SLEEP = 15000;
 
@@ -7,6 +7,6 @@ module.exports = async (deployer, network, accounts) => {
 
   deployer.deploy(Patron);
   
-  deployer.deploy(RewardPatron);
+  deployer.deploy(PatronSetting);
   
 };

@@ -1,5 +1,5 @@
 const Patron = artifacts.require('Patron');
-const RewardPatron = artifacts.require('RewardPatron');
+const PatronSetting = artifacts.require('PatronSetting');
 const TIIMToken = artifacts.require('TIIMToken');
 
 const {
@@ -15,7 +15,7 @@ const REWARD_EXPECTED_BALANCE = 25 * MILLION * UNIT;
 let OWNER;
 let NON_OWNER;
 let PATRON;
-let REWARD_PATRON;
+let PATRON_SETTING;
 let TIIM_TOKEN;
 
 let COMMUNITY_WALLET;
@@ -44,18 +44,18 @@ contract('Reward Patron Testing', accounts => {
 
     PATRON = await Patron.new();
 
-    REWARD_PATRON = await RewardPatron.new();
+    PATRON_SETTING = await PatronSetting.new();
 
-    const txn = await REWARD_PATRON.setTiimToken(TIIM_TOKEN.address);
+    const txn = await PATRON_SETTING.setTiimToken(TIIM_TOKEN.address);
 
-    await REWARD_PATRON.setPatron(PATRON.address);
+    await PATRON_SETTING.setPatron(PATRON.address);
 
   });
 
   it('Set TIIM Token is not a contract should throw exception', async () => {
     
     try {
-      await REWARD_PATRON.setTiimToken(NON_OWNER);
+      await PATRON_SETTING.setTiimToken(NON_OWNER);
 
       assert(false, 'Should not come here');
 
@@ -67,16 +67,16 @@ contract('Reward Patron Testing', accounts => {
   it('Owner staking patron', async () => {
     const patronOwner = await PATRON.owner();
 
-    const RewardPatronOwner = await REWARD_PATRON.owner();
+    const PatronSettingOwner = await PATRON_SETTING.owner();
 
     assert.equal(patronOwner, OWNER, 'Owner should be ' + OWNER);
 
-    assert.equal(RewardPatronOwner, OWNER, 'Owner should be ' + OWNER);
+    assert.equal(PatronSettingOwner, OWNER, 'Owner should be ' + OWNER);
   });
 
   it('Non owner should not be able to set Patron for Stacking Patron contact', async () => {
     try {
-      await REWARD_PATRON.setPatron(PATRON.address, { from: NON_OWNER });
+      await PATRON_SETTING.setPatron(PATRON.address, { from: NON_OWNER });
 
       assert(false, 'Should not come here');
     } catch (err) {
@@ -85,7 +85,7 @@ contract('Reward Patron Testing', accounts => {
   });
 
   it('Only owner should be able to set Frequence in seconds', async () => {
-    const txn = await REWARD_PATRON.setFrequenceInSeconds(FREQUENCE_IN_SECONDS);
+    const txn = await PATRON_SETTING.setFrequenceInSeconds(FREQUENCE_IN_SECONDS);
 
     // expect fired event should contains these information
     const frequenceInSeconds = txn.logs[0].args.frequence_in_seconds.valueOf();
@@ -97,7 +97,7 @@ contract('Reward Patron Testing', accounts => {
     assert.equal(eventName, 'ModifiedFrequenceInSeconds');
 
     // ensure instance variable updated
-    const freInSeconds = await REWARD_PATRON.frequence_in_seconds();
+    const freInSeconds = await PATRON_SETTING.frequence_in_seconds();
 
     assert.equal(
       freInSeconds,
@@ -108,7 +108,7 @@ contract('Reward Patron Testing', accounts => {
 
   it('Non owner should not be able to set Frequence in seconds', async () => {
     try {
-      await REWARD_PATRON.setFrequenceInSeconds(FREQUENCE_IN_SECONDS, {
+      await PATRON_SETTING.setFrequenceInSeconds(FREQUENCE_IN_SECONDS, {
         from: NON_OWNER
       });
 
@@ -119,11 +119,11 @@ contract('Reward Patron Testing', accounts => {
   });
 
   it('Only owner should be able to set  withdrawal delay in seconds', async () => {
-    await REWARD_PATRON.setWithdrawalDelayInSeconds(
+    await PATRON_SETTING.setWithdrawalDelayInSeconds(
       _WITHDRAWAL_DELAY_IN_SECONDS
     );
 
-    const WithdrawalDelayInSeconds = await REWARD_PATRON.withdraw_delay_in_seconds();
+    const WithdrawalDelayInSeconds = await PATRON_SETTING.withdrawal_delay_in_seconds();
 
     assert.equal(
       WithdrawalDelayInSeconds,
@@ -133,8 +133,8 @@ contract('Reward Patron Testing', accounts => {
   });
 
   it('Only owner should be able to set frequence reward amount', async () => {
-    await REWARD_PATRON.setFrequenceRewardAmount(FREQUENCE_REWARD_AMOUNT);
-    const frequenceRewardAmount = await REWARD_PATRON.frequence_reward_amount();
+    await PATRON_SETTING.setFrequenceRewardAmount(FREQUENCE_REWARD_AMOUNT);
+    const frequenceRewardAmount = await PATRON_SETTING.frequence_reward_amount();
 
     assert.equal(
       frequenceRewardAmount,
@@ -145,7 +145,7 @@ contract('Reward Patron Testing', accounts => {
 
   it('Non owner should not be able to set frequence reward amount', async () => {
     try {
-      await REWARD_PATRON.setFrequenceRewardAmount(FREQUENCE_REWARD_AMOUNT, {
+      await PATRON_SETTING.setFrequenceRewardAmount(FREQUENCE_REWARD_AMOUNT, {
         from: NON_OWNER
       });
 
@@ -157,7 +157,7 @@ contract('Reward Patron Testing', accounts => {
 
   it('Non owner should not be able to set minimum staking amount', async () => {
     try {
-      await REWARD_PATRON.setMinimumStakingAmount(50, { from: NON_OWNER });
+      await PATRON_SETTING.setMinimumStakeAmount(50, { from: NON_OWNER });
 
       assert(false, 'Should not come here');
     } catch (err) {
@@ -166,17 +166,17 @@ contract('Reward Patron Testing', accounts => {
   });
 
   // it('Test reward send token out', async() => {
-  //   await TIIM_TOKEN.transfer(REWARD_PATRON.address, REWARD_EXPECTED_BALANCE, {from: OWNER});
+  //   await TIIM_TOKEN.transfer(PATRON_SETTING.address, REWARD_EXPECTED_BALANCE, {from: OWNER});
     
-  //   const rewardBalance = await TIIM_TOKEN.balanceOf(REWARD_PATRON.address);
+  //   const rewardBalance = await TIIM_TOKEN.balanceOf(PATRON_SETTING.address);
 
   //   assert.equal(rewardBalance, REWARD_EXPECTED_BALANCE);
     
-  //   // await REWARD_PATRON.claimReward(ANONYMOUS, 100);
+  //   // await PATRON_SETTING.claimReward(ANONYMOUS, 100);
 
   //   // const b = await TIIM_TOKEN.balanceOf(ANONYMOUS);
 
-  //   await PATRON.setRewardPatron(REWARD_PATRON.address);
+  //   await PATRON.setPatronSetting(PATRON_SETTING.address);
 
   //   await PATRON.testClaim(ANONYMOUS, 100);
     
