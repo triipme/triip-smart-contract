@@ -4,13 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
-
-
-contract Receiver {
-  function onTokenTransfer(address _sender, uint _purchase_amount) public;
-  function onTokenTransferWithUint(address _sender, uint _purchase_amount, uint _value) public;
-  function onTokenTransferWithByte(address _sender, uint _purchase_amount, bytes _data) public;
-}
+import "./Receiver.sol";
 
 contract TIIMToken is StandardToken, Ownable, Pausable {
 

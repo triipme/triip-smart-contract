@@ -22,7 +22,9 @@ module.exports = {
     development: {
       host: "localhost",
       port: 9545,
-      network_id: "*"
+      network_id: "*",
+      gas: 2000000,   // <--- Twice as much
+      gasPrice: 10000000000,
     },
     local: {
       host: "localhost",

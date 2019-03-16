@@ -4,13 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
-
-
-contract Receiver {
-  function onTokenTransfer(address _patron, uint _amount) public;
-  function onTokenTransferWithUint(address _patron, uint _amount, uint _value) public;
-  function onTokenTransferWithByte(address _patron, uint _amount, bytes _data) public;
-}
+import "./Receiver.sol";
 
 contract AbstractPatron is Ownable {
 
@@ -108,26 +102,33 @@ contract PatronSetting is AbstractPatron {
     }
 }
 
-contract Patron is AbstractPatron, Receiver {
+contract Patron is AbstractPatron {
 
     event ModifiedPatronSetting(address indexed _patron_settings);
     event Unstake(address indexed _patron, uint _amount, uint _withdrawal_at);
     
     uint public total_staking_amount;
 
-    StakingInfo[] public staking_lists;
+    address[] public staking_list;
     
     mapping(address => uint) internal staking_map;
     mapping(address => WithdrawalInfo[]) internal withdrawal_map;
+
+    PatronStaking public patron_staking;
+    PatronSetting public patron_setting;
 
     struct WithdrawalInfo {
         uint amount;
         uint withdrawal_at;
     }
 
-    struct StakingInfo {
-        address patron;
-        uint amount;
+    modifier onlyPatronStaking () {
+        require(msg.sender == address(patron_staking), "Should call from Patron Staking");
+        _;
+    }
+
+    function setPatronStaking(address _patron_staking) public onlyOwner {
+        patron_staking = PatronStaking(_patron_staking);
     }
 
     /**
@@ -140,30 +141,35 @@ contract Patron is AbstractPatron, Receiver {
     }
 
     
-    function stake(address _patron, uint _amount) private returns (bool) {
+    function stake(address _patron, uint _amount) public onlyPatronStaking returns (bool) {
         
-        waiting_lists.push(WaitingInfo(_patron, _amount, now));
+        if(staking_map[_patron] == 0) {
+            // new patron
+            staking_list.push(_patron);
+        }
+
+        staking_map[_patron] = staking_map[_patron] + _amount;
+
+        total_staking_amount = total_staking_amount + _amount;
 
         return true;
     }
 
-    function updateWaitingList() public onlyPatronStaking returns (bool) {
-
-    }
-
     function unstake(uint _amount) public returns (bool) {
         
-        require(_amount >= settings.minimum_unstake_amount(), "Unstake must be over minimum unstake amount");
+        require(_amount >= patron_setting.minimum_unstake_amount(), "Unstake must be over minimum unstake amount");
 
         uint patron_staking_amount = staking_map[msg.sender];
 
         require(patron_staking_amount >= _amount,"Patron balance should be greater or equals with unstake amount");
 
-        staking_map[msg.sender] = staking_map[msg.sender].sub(_amount);
+        staking_map[msg.sender] = staking_map[msg.sender] - _amount;
 
         withdrawal_map[msg.sender].push(WithdrawalInfo(_amount, now) );
 
         emit Unstake(msg.sender, _amount, now);
+
+        total_staking_amount = total_staking_amount - _amount;
 
         return true;
 
@@ -175,7 +181,7 @@ contract Patron is AbstractPatron, Receiver {
 
         uint _withdrawal_at = withdrawal_map[msg.sender][_index].withdrawal_at;
 
-        require(now >= _withdrawal_at + settings.withdrawal_delay_in_seconds(), "Still in withdrawal delay");
+        require(now >= _withdrawal_at + patron_setting.withdrawal_delay_in_seconds(), "Still in withdrawal delay");
 
         uint _amount = withdrawal_map[msg.sender][_index].amount;
 
@@ -184,15 +190,30 @@ contract Patron is AbstractPatron, Receiver {
         return true;
 
     }
+
+    function dispatch_reward() public onlyPatronStaking {
+        // calc reward : reward_per_token:  = reward / total staking tiim;
+        uint rewardPerToken = patron_setting.frequence_reward_amount() / total_staking_amount;
+        
+        // send reward : list investor & staked amount
+        for(uint i = 0 ; i < staking_list.length; i++) {
+            
+            address patronAddress = staking_list[i];
+            uint patronReward = staking_map[patronAddress] * rewardPerToken;
+            tiim_token.transfer(patronAddress, patronReward);
+
+        }  
+    }
 }
 
-contract PatronStaking is Receiver, Ownable {
+contract PatronStaking is AbstractPatron, Receiver {
 
     Patron public patron;
     PatronSetting public patron_setting;
     ERC20 public tiim_token;
 
     uint public lastTriggerPatronRewardAt;
+    uint public epoch = 0;
 
     WaitingInfo[] public waiting_list;
 
@@ -202,13 +223,13 @@ contract PatronStaking is Receiver, Ownable {
         uint staked_at;
     }
 
-    constructor (address _patron, address _patron_setting, address _tiim_token) public {
-        patron = Patron(_patron);
-        patron_setting = PatronSetting(_patron_setting);
-        tiim_token = TIIMToken(_tiim_token);
-    }
+    // constructor (address _patron, address _patron_setting, address _tiim_token) public {
+    //     patron = Patron(_patron);
+    //     patron_setting = PatronSetting(_patron_setting);
+    //     tiim_token = ERC20(_tiim_token);
+    // }
 
-    function start() onlyOwner {
+    function start() public onlyOwner {
         lastTriggerPatronRewardAt = now + patron_setting.frequence_in_seconds();
     }
 
@@ -227,18 +248,9 @@ contract PatronStaking is Receiver, Ownable {
 
         tiim_token.transfer(patron, _amount);
 
-        waiting_lists.push(WaitingInfo(_patron, _amount, now ));
+        waiting_list.push(WaitingInfo(_patron, _amount, now ));
 
     }
-
-    function onTokenTransferWithUint(address _patron, uint _amount, uint _value) public onlyTIIMToken { 
-        
-    }
-    function onTokenTransferWithByte(address _patron, uint _amount, bytes _data) public onlyTIIMToken {
-        
-    }
-
-
 
     /**
      * 1. move from waiting list to staking list
@@ -261,33 +273,19 @@ contract PatronStaking is Receiver, Ownable {
             
             moveToStaking(rewardAt);
 
-            reward();
+            patron.dispatch_reward();
 
             lastTriggerPatronRewardAt = rewardAt;
+
+            epoch = epoch + 1;
         }
     }
 
-    function reward() {
-        // calc reward : reward_per_token:  = reward / total staking tiim;
-        uint rewardPerToken = patron_setting.frequence_reward_amount() / patron.total_staking_amount();
-        // send reward : list investor & staked amount
-        StakingInfo[] stakings = patron.staking_lists();
-
-        for(uint i = 0 ; i < stakings.length; i++) {
-            
-            uint patronReward = stakings[i].amount * rewardPerToken;
-
-            tiim_token.transfer(stakings[i].patron, patronReward);
-
-        }
-
-    }
-
-    function moveToStaking(uint rewardAt) {
+    function moveToStaking(uint rewardAt) private {
         
         for (uint i = 0 ; i < waiting_list.length; i++) {
             
-            WaitingInfo waitingInfo = waiting_list[i];
+            WaitingInfo storage waitingInfo = waiting_list[i];
             
             uint staked_at = waitingInfo.staked_at;
             if(staked_at <= rewardAt){

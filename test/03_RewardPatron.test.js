@@ -1,5 +1,6 @@
 const Patron = artifacts.require('Patron');
 const PatronSetting = artifacts.require('PatronSetting');
+const PatronStaking = artifacts.require('PatronStaking');
 const TIIMToken = artifacts.require('TIIMToken');
 
 const {
@@ -16,6 +17,8 @@ let OWNER;
 let NON_OWNER;
 let PATRON;
 let PATRON_SETTING;
+let PATRON_STAKING;
+
 let TIIM_TOKEN;
 
 let COMMUNITY_WALLET;
@@ -46,7 +49,9 @@ contract('Reward Patron Testing', accounts => {
 
     PATRON_SETTING = await PatronSetting.new();
 
-    const txn = await PATRON_SETTING.setTiimToken(TIIM_TOKEN.address);
+    PATRON_STAKING = await PatronStaking.new();
+
+    await PATRON_SETTING.setTiimToken(TIIM_TOKEN.address);
 
     await PATRON_SETTING.setPatron(PATRON.address);
 
