@@ -11,6 +11,8 @@ On top of that, we’re contributing 1% of each booking conducted on Triip to a 
  3. [Testing](#testing)
  4. [Deploy](#deploy)
 
+ 5. [Dev Smart Contract UI Setup](#smart-contract-ui-setup)
+
 # Technical Stack
 
 * nvm 0.33.11
@@ -30,3 +32,6 @@ On top of that, we’re contributing 1% of each booking conducted on Triip to a 
 
 # Deploy
 * `MNEMONIC="{your seed word}" truffle migrate --network rinkeby --reset` : you need MNEMONIC to deploy to Rinkeby - note: wallet from your seed word must have ETH for deploying
+
+# Smart Contract UI Setup
+* python -m SimpleHTTPServer
