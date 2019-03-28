@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
-import "./Receiver.sol";
+import "./ERC677Receiver.sol";
 
 contract AbstractPatron is Ownable {
 
@@ -67,6 +67,19 @@ contract PatronSetting is AbstractPatron {
     uint public withdrawal_delay_in_seconds;
     uint public minimum_stake_amount;
     uint public minimum_unstake_amount;
+
+    constructor (uint _frequence_in_seconds,
+    uint _frequence_reward_amount,
+    uint _withdrawal_delay_in_seconds,
+    uint _minimum_stake_amount,
+    uint _minimum_unstake_amount) public {
+        
+        frequence_in_seconds = _frequence_in_seconds;
+        frequence_reward_amount = _frequence_reward_amount;
+        withdrawal_delay_in_seconds = _withdrawal_delay_in_seconds;
+        minimum_stake_amount = _minimum_stake_amount;
+        minimum_unstake_amount = _minimum_unstake_amount;
+    }
 
     function setFrequenceInSeconds(uint _frequence_in_seconds) onlyOwner public returns (bool) {
         frequence_in_seconds = _frequence_in_seconds;
@@ -206,7 +219,7 @@ contract Patron is AbstractPatron {
     }
 }
 
-contract PatronStaking is AbstractPatron, Receiver {
+contract PatronStaking is AbstractPatron, ERC677Receiver {
 
     Patron public patron;
     PatronSetting public patron_setting;
@@ -223,24 +236,17 @@ contract PatronStaking is AbstractPatron, Receiver {
         uint staked_at;
     }
 
-    // constructor (address _patron, address _patron_setting, address _tiim_token) public {
-    //     patron = Patron(_patron);
-    //     patron_setting = PatronSetting(_patron_setting);
-    //     tiim_token = ERC20(_tiim_token);
-    // }
-
     function start() public onlyOwner {
         lastTriggerPatronRewardAt = now + patron_setting.frequence_in_seconds();
     }
 
 
-    function onTokenTransfer(address _patron, uint _amount) public onlyTIIMToken {
+    function onTokenTransfer(address _patron, uint _amount, bytes _data) public onlyTIIMToken returns (bool) {
 
-        staking(_patron, _amount);
-        
+        return staking(_patron, _amount, _data);
     }
 
-    function staking(address _patron, uint _amount) private {
+    function staking(address _patron, uint _amount, bytes _data) private returns (bool) {
 
         uint minimum = patron_setting.minimum_stake_amount();
 
@@ -250,6 +256,7 @@ contract PatronStaking is AbstractPatron, Receiver {
 
         waiting_list.push(WaitingInfo(_patron, _amount, now ));
 
+        return true;
     }
 
     /**
