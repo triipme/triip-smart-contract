@@ -30,7 +30,7 @@ contract TIIMToken is StandardToken, Pausable {
     uint    public constant TIIMTeamAllocation = 50 * MILLION_TIIM_UNIT;                         // 50,000,000 TIIM
     
     address public tiimCommunityReserveWallet;
-    address public tiimTokenSaleAllocationWallet;
+    address public tiimTokenSaleWallet;
     address public tiimEcosystemWallet;
     address public tiimCompanyReserveWallet;
     address public teamWallet;
@@ -55,29 +55,33 @@ contract TIIMToken is StandardToken, Pausable {
     uint    public constant RELEASE_PERIOD = 30 days;
 
     constructor(address _tiimCommunityReserveWallet, 
-                address _tiimCrowdFundAllocationWallet, 
+                address _tiimTokenSaleWallet, 
                 address _tiimEcoWallet, 
                 address _tiimCompanyReserveWallet,
                 address _teamWallet,
                 address _founderWallet) public {
 
+        require(_tiimCommunityReserveWallet != address(0x0), "Community reserve wallet should not be 0x0");
+        require(_tiimTokenSaleWallet != address(0x0), "Token sale wallet should not be 0x0");
+        require(_tiimEcoWallet != address(0x0), "Ecosystem wallet should not be 0x0");
+        require(_tiimCompanyReserveWallet != address(0x0), "Company reserve wallet should not be 0x0");
         require(_teamWallet != address(0x0), "Team wallet should not be 0x0");
         require(_founderWallet != address(0x0), "Founder wallet should not be 0x0");
                     
         tiimCommunityReserveWallet = _tiimCommunityReserveWallet;
-        tiimTokenSaleAllocationWallet = _tiimCrowdFundAllocationWallet;
+        tiimTokenSaleWallet = _tiimTokenSaleWallet;
         tiimEcosystemWallet = _tiimEcoWallet;
         tiimCompanyReserveWallet = _tiimCompanyReserveWallet;
         teamWallet = _teamWallet;
         founderWallet = _founderWallet;
 
         balances[tiimCommunityReserveWallet] = balances[tiimCommunityReserveWallet].add(TIIMCommunityReserveAllocation);
-        balances[tiimTokenSaleAllocationWallet] = balances[tiimTokenSaleAllocationWallet].add(TIIMTokenSaleAllocation);
+        balances[tiimTokenSaleWallet] = balances[tiimTokenSaleWallet].add(TIIMTokenSaleAllocation);
         balances[tiimEcosystemWallet] = balances[tiimEcosystemWallet].add(TIIMEcosystemAllocation);
         balances[tiimCompanyReserveWallet] = balances[tiimCompanyReserveWallet].add(TIIMCompanyReserveAllocation);
 
         emit Transfer(0x0, tiimCommunityReserveWallet, TIIMCommunityReserveAllocation);
-        emit Transfer(0x0, tiimTokenSaleAllocationWallet, TIIMTokenSaleAllocation);
+        emit Transfer(0x0, tiimTokenSaleWallet, TIIMTokenSaleAllocation);
         emit Transfer(0x0, tiimEcosystemWallet, TIIMEcosystemAllocation);
         emit Transfer(0x0, tiimCompanyReserveWallet, TIIMCompanyReserveAllocation);
     }
@@ -145,20 +149,23 @@ contract TIIMToken is StandardToken, Pausable {
         
         uint currentTranche = now.sub(endTime).div(RELEASE_PERIOD);
         
-        require(currentTranche > teamTranchesReleased, "This release time claimed already");
+        if(currentTranche > teamTranchesReleased) {
 
-        uint amount = teamAllocation.div(maxTeamTranches);
+          uint amount = teamAllocation.div(maxTeamTranches);
 
-        balances[teamWallet] = balances[teamWallet].add(amount);
+          balances[teamWallet] = balances[teamWallet].add(amount);
 
-        totalTeamAllocated = totalTeamAllocated.add(amount);
+          totalTeamAllocated = totalTeamAllocated.add(amount);
 
-        teamTranchesReleased++;
+          teamTranchesReleased++;
 
-        emit Transfer(0x0, teamWallet, amount);
-        emit Released(teamWallet, amount);
+          emit Transfer(0x0, teamWallet, amount);
+          emit Released(teamWallet, amount);
 
-        return true;
+          return true;
+        }
+
+        return false;
     }
 
     /**
@@ -172,20 +179,22 @@ contract TIIMToken is StandardToken, Pausable {
 
         uint currentTranche = now.sub(endTime).div(RELEASE_PERIOD);
 
-        require(currentTranche > founderTranchesReleased, "This release time claimed already");
+        if (currentTranche > founderTranchesReleased) {
+          uint amount = founderAllocation.div(maxFounderTranches);
 
-        uint amount = founderAllocation.div(maxFounderTranches);
+          balances[founderWallet] = balances[founderWallet].add(amount);
 
-        balances[founderWallet] = balances[founderWallet].add(amount);
+          totalFounderAllocated = totalFounderAllocated.add(amount);
 
-        totalFounderAllocated = totalFounderAllocated.add(amount);
+          founderTranchesReleased++;
 
-        founderTranchesReleased++;
+          emit Transfer(0x0, founderWallet, amount);
+          emit Released(founderWallet, amount);
 
-        emit Transfer(0x0, founderWallet, amount);
-        emit Released(founderWallet, amount);
-        
-        return true;
+          return true;
+        }
+
+        return false;
     }
 
 }
