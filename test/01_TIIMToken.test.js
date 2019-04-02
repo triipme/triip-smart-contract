@@ -49,10 +49,10 @@ contract('TIIMToken', accounts => {
 
   });
 
-  it('Crowd Funding Wallet should be 75m', async () => {
+  it('Token sale wallet should be 165m', async () => {
     const balance = await TIIM.balanceOf(CROWD_FUNDING_WALLET);
 
-    assert.equal(balance.valueOf(), 75 * MILLION * UNIT, 'Crowd Funding Wallet should have 75m');
+    assert.equal(balance.valueOf(), 165 * MILLION * UNIT, 'Token sale wallet should have 165m');
   });
 
   it('Eco Wallet should be 75m', async () => {

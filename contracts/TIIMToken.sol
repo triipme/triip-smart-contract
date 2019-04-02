@@ -24,7 +24,7 @@ contract TIIMToken is StandardToken, Pausable {
 
     uint    public constant TIIMCommunityReserveAllocation = 125 * MILLION_TIIM_UNIT;            // 125,000,000 TIIM
     
-    uint    public constant TIIMTokenSaleAllocation = 75 * MILLION_TIIM_UNIT;                    // 75,000,000 TIIM - private sale & other currency
+    uint    public constant TIIMTokenSaleAllocation = 165 * MILLION_TIIM_UNIT;                   // 165,000,000 TIIM
     uint    public constant TIIMEcosystemAllocation = 75 * MILLION_TIIM_UNIT;                    // 75,000,000 TIIM
     uint    public constant TIIMCompanyReserveAllocation = 85 * MILLION_TIIM_UNIT;               // 85,000,000 TIIM
     uint    public constant TIIMTeamAllocation = 50 * MILLION_TIIM_UNIT;                         // 50,000,000 TIIM
