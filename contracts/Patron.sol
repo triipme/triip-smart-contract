@@ -192,6 +192,8 @@ contract Patron is AbstractPatron {
         
         require(withdrawal_map[msg.sender].length > 0 , "Should have withdrawal pending");
 
+        require(_index < withdrawal_map[msg.sender].length , "Index out of bound withdrawal");
+
         uint _withdrawal_at = withdrawal_map[msg.sender][_index].withdrawal_at;
 
         require(now >= _withdrawal_at + patron_setting.withdrawal_delay_in_seconds(), "Still in withdrawal delay");
