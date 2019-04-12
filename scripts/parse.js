@@ -44,6 +44,7 @@ parseCsv = async () => {
         toTransfer[t[0]] = {
           address: t[0],
           value: new BigNumber(t[1]),
+          callback: 'http://localhost:8080/api/fake_callback',
           nonce: null
         };
       }
