@@ -1,57 +1,59 @@
-async function loadEdit() {
-  if (typeof web3 === "undefined") {
-    console.log("No Web3 Detected... using HTTP Provider");
-    window.web3 = new Web3(
-      new Web3.providers.HttpProvider("https://rpc.tomochain.com")
-    );
-  } else {
-    console.log("Web3 Detected! ", web3.currentProvider.constructor.name);
+// contracts.triip.me
 
-    window.web3 = new Web3(ethereum);
-
-    let account = await getAccount();
-    if (account === undefined) {
-      $("#NotLogin").text("Please login Metamask");
-    } else {
-      let name = await tokenName();
-      
-      
-      let TIIMCommunityReserveAllocation = await tokenTIIMCommunityReserveAllocation();
-      let TIIMCrowdFundAllocation = await tokenTIIMCrowdFundAllocation();
-
-      let TIIMEcoAllocation = await tokenTIIMEcoAllocation();
-      let TIIMCompanyAllocation = await tokenTIIMCompanyAllocation();
-      let TIIMTeamAllocation = await tokenTIIMTeamAllocation();
-
-
-      let tokenBalance = await getTokenBalance(account);
-
-      let balance = await getBalance(account);
-
-      $("#Wallet").text(account);
-      $("#Balance").text(web3.utils.fromWei(balance, "ether"));
-      $("#TokenBalance").text(tokenBalance);
-      $("#TokenName").text(name);
-
-      $("#TIIMCommunityReserveAllocation").text(web3.utils.fromWei(TIIMCommunityReserveAllocation));
-      $("#TIIMCrowdFundAllocation").text(web3.utils.fromWei(TIIMCrowdFundAllocation));
-      $("#TIIMEcoAllocation").text(web3.utils.fromWei(TIIMEcoAllocation));
-      $("#TIIMCompanyAllocation").text(web3.utils.fromWei(TIIMCompanyAllocation));
-      $("#TIIMTeamAllocation").text(web3.utils.fromWei(TIIMTeamAllocation));
-
-      $("#Login").css("display", "inline");
-    }
-  }
-}
-
-
-web3 = new Web3(new Web3.providers.HttpProvider("https://rpc.tomochain.com"));
+// Connect to TOMO MainNet only
+var web3 = new Web3(new Web3.providers.HttpProvider("https://rpc.tomochain.com"));
 
 // TIIM Token smart contract address at Tomo Mainnet
 var contract_address = "0x4f7239c38d73a6cba675a3023cf84b304f6daef6";
 
 // Instance TIIM Token contract
 var token = new web3.eth.Contract(contract_abi, contract_address);
+
+// Detect MetaMask on init and update UI accordingly
+async function initPage() {
+  if (typeof web3 === "undefined") {
+    console.log("No Web3 Detected, cannot connect to mainnet");
+    $("#needlogin, #contractData").hide();
+  } else {
+    console.log("Web3 Detected! Current Provider: ", web3.currentProvider.host);
+    $("#mmguide").hide();
+
+    account = await getAccount();
+    if (account === undefined) {
+      $("#needlogin, #contractData").show();
+    } else {
+      // Basic labels
+      $("#ContractAddress").text(contract_address);
+      // Show spinner UI
+      $(".async-value-holder").append($("#spinner").clone().removeClass('d-none'));
+      // Fetch data
+      fetchContractData();
+    }
+  }
+}
+
+async function fetchContractData() {
+  let account = await getAccount();
+  let name = await tokenName();
+  let TIIMCommunityReserveAllocation = await tokenTIIMCommunityReserveAllocation();
+  let TIIMCrowdFundAllocation = await tokenTIIMCrowdFundAllocation();
+  let TIIMEcoAllocation = await tokenTIIMEcoAllocation();
+  let TIIMCompanyAllocation = await tokenTIIMCompanyAllocation();
+  let TIIMTeamAllocation = await tokenTIIMTeamAllocation();
+  let tokenBalance = await getTokenBalance(account);
+  let balance = await getBalance(account);
+  
+  $("#Wallet").text(account);
+  $("#Balance").text(web3.utils.fromWei(balance, "ether"));
+  $("#TokenBalance").text(tokenBalance);
+  $("#TokenName").text(name);
+  $("#TIIMCommunityReserveAllocation").text(web3.utils.fromWei(TIIMCommunityReserveAllocation));
+  $("#TIIMCrowdFundAllocation").text(web3.utils.fromWei(TIIMCrowdFundAllocation));
+  $("#TIIMEcoAllocation").text(web3.utils.fromWei(TIIMEcoAllocation));
+  $("#TIIMCompanyAllocation").text(web3.utils.fromWei(TIIMCompanyAllocation));
+  $("#TIIMTeamAllocation").text(web3.utils.fromWei(TIIMTeamAllocation));
+}
+
 
 async function getTokenBalance(account) {
   var balance = await token.methods.balanceOf(account).call();

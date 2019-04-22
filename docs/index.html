@@ -1,103 +1,105 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Triip Smart Contract UI</title>
-
+    <title>Triip - Smart Contracts Visualised</title>
     <link rel="shortcut icon" type="image/png" href="/favicon.png" />
-    <script
-      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-      crossorigin="anonymous"
-    ></script>
-
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="./css/app.css"/>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" ></script>
     <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.34/dist/web3.min.js"></script>
-
     <script src="./js/contract_abi.js"></script>
     <script src="./js/app.js"></script>
-
-    <link
-      rel="stylesheet"
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-      crossorigin="anonymous"
-    />
-    <script
-      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-      crossorigin="anonymous"
-    ></script>
-
-    <script>
-
-      window.onload = loadEdit();
-      // window.addEventListener("load", () => loadEdit(), false);
-
-      
-    </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>$(document).ready(function() { initPage(); });</script>
   </head>
   <body class="container" onload>
-    <h1>Triip Smart Contract UI</h1>
-    <span class="text-danger" id="NotLogin"></span>
+    <h1>Triip's Smart Contract Visualised</h1>
+    <hr />
 
-    <div id="Login" style="display:none">
+    <!-- Showing MetaMask instruction & warning by default -->
+    <div class="alert alert-danger" id="mmguide">
+      You need <b>MetaMask</b> plugin to view Smart Contracts.
+      It is a must-have tool if you are new to crypto tokens.
+      <br/>
+      <br/>
+      Please click here to visit <a href="https://metamask.io/" target="_blank">MetaMask.io</a> and follow instructions to <b>add MetaMask</b> to your current browser.
+      <br>This one-time setup should take less than 1 minute.
+      <br/>
+      <br/>
+      Once you are done, <b>refresh this page</b> to continue.
+
+      <hr/>
+      <small>
+        Only <i>Chrome / Chrome-based / Firefox / Opera / Brave</i> browsers are supported.
+      </small>
+    </div>
+
+    <!-- Ask user to login (unlock) MetaMask on browser -->
+    <div class="alert alert-danger d-none" id="needlogin">
+      Please <b>login/unlock</b> MetaMask on your browser, then <b>refresh this page</b> to continue.
+    </div>
+
+    <!-- New UI section -->
+    <div id="contractData">
       <div class="container">
-        Wallet Address: <span class="text-primary" id="Wallet"> </span> -
-        Balance: <span id="Balance" class="text-success"> </span> in Ether.
 
+        Viewing Smart Token Contract at
+        <span class="text-info async-value-holder" id="ContractAddress"></span>
         <hr />
-        <div>
-          Interact with TIIM Contract at
-          <span class="text-info">
-            0x4f7239c38d73a6cba675a3023cf84b304f6daef6
-          </span>
-        </div>
-        <br />
-        <br />
+
+        Your Wallet Address:
+        <span class="text-primary async-value-holder" id="Wallet"></span>
+        <br/>
+        <br/>
+        Balance:
+        <span id="Balance" class="text-success async-value-holder"></span> in Ether.
+        <hr />
 
         <div class="row">
           <div class="col-4">Token name:</div>
-          <div class="col-6"><span id="TokenName"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TokenName"></span></div>
         </div>
 
         <div class="row">
           <div class="col-4">Your Token balance:</div>
-          <div class="col-6"><span id="TokenBalance"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TokenBalance"></span></div>
         </div>
 
         <div class="row">
           <div class="col-4">TIIM Community Reserve Allocation:</div>
-          <div class="col-6"><span id="TIIMCommunityReserveAllocation"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TIIMCommunityReserveAllocation"></span></div>
         </div>
 
         <div class="row">
           <div class="col-4">TIIM Token Sale Allocation:</div>
-          <div class="col-6"><span id="TIIMCrowdFundAllocation"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TIIMCrowdFundAllocation"></span></div>
         </div>
 
         <div class="row">
           <div class="col-4">TIIM Ecosystem Allocation:</div>
-          <div class="col-6"><span id="TIIMEcoAllocation"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TIIMEcoAllocation"></span></div>
         </div>
 
         <div class="row">
           <div class="col-4">TIIM Company Reserve Allocation:</div>
-          <div class="col-6"><span id="TIIMCompanyAllocation"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TIIMCompanyAllocation"></span></div>
         </div>
 
         <div class="row">
           <div class="col-4">Team Token Allocated:</div>
-          <div class="col-6"><span id="TIIMTeamAllocation"></span></div>
+          <div class="col-6"><span class='async-value-holder' id="TIIMTeamAllocation"></span></div>
         </div>
 
         <br />
       </div>
     </div>
 
-    <br />
+    <div id="spinner" class='d-none'>
+      <div id="fountainG_1" class="fountainG"></div>
+      <div id="fountainG_2" class="fountainG"></div>
+      <div id="fountainG_3" class="fountainG"></div>
+    </div>
+
   </body>
 </html>
