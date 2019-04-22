@@ -16,12 +16,12 @@ async function loadEdit() {
       let name = await tokenName();
       
       
-      let SIROCommunityReserveAllocation = await tokenSIROCommunityReserveAllocation();
-      let SIROCrowdFundAllocation = await tokenSIROCrowdFundAllocation();
+      let TIIMCommunityReserveAllocation = await tokenTIIMCommunityReserveAllocation();
+      let TIIMCrowdFundAllocation = await tokenTIIMCrowdFundAllocation();
 
-      let SIROEcoAllocation = await tokenSIROEcoAllocation();
-      let SIROCompanyAllocation = await tokenSIROCompanyAllocation();
-      let SIROTeamAllocation = await tokenSIROTeamAllocation();
+      let TIIMEcoAllocation = await tokenTIIMEcoAllocation();
+      let TIIMCompanyAllocation = await tokenTIIMCompanyAllocation();
+      let TIIMTeamAllocation = await tokenTIIMTeamAllocation();
 
 
       let tokenBalance = await getTokenBalance(account);
@@ -33,11 +33,11 @@ async function loadEdit() {
       $("#TokenBalance").text(tokenBalance);
       $("#TokenName").text(name);
 
-      $("#SIROCommunityReserveAllocation").text(web3.utils.fromWei(SIROCommunityReserveAllocation));
-      $("#SIROCrowdFundAllocation").text(web3.utils.fromWei(SIROCrowdFundAllocation));
-      $("#SIROEcoAllocation").text(web3.utils.fromWei(SIROEcoAllocation));
-      $("#SIROCompanyAllocation").text(web3.utils.fromWei(SIROCompanyAllocation));
-      $("#SIROTeamAllocation").text(web3.utils.fromWei(SIROTeamAllocation));
+      $("#TIIMCommunityReserveAllocation").text(web3.utils.fromWei(TIIMCommunityReserveAllocation));
+      $("#TIIMCrowdFundAllocation").text(web3.utils.fromWei(TIIMCrowdFundAllocation));
+      $("#TIIMEcoAllocation").text(web3.utils.fromWei(TIIMEcoAllocation));
+      $("#TIIMCompanyAllocation").text(web3.utils.fromWei(TIIMCompanyAllocation));
+      $("#TIIMTeamAllocation").text(web3.utils.fromWei(TIIMTeamAllocation));
 
       $("#Login").css("display", "inline");
     }
@@ -47,11 +47,11 @@ async function loadEdit() {
 
 web3 = new Web3(new Web3.providers.HttpProvider("https://rpc.tomochain.com"));
 
-// Siro Token smart contract address at Tomo Mainnet
-var contract_address = "0x9e2b6a4b95a02afa43e59963c062b8daa07dc20a";
+// TIIM Token smart contract address at Tomo Mainnet
+var contract_address = "0x4f7239c38d73a6cba675a3023cf84b304f6daef6";
 
-// Instance Siro Token contract
-var token = new web3.eth.Contract(contract_abi, contract_address, {from: "0x17f2E9B14dba1242e9444Fa2EAbA1986E9466248"});
+// Instance TIIM Token contract
+var token = new web3.eth.Contract(contract_abi, contract_address);
 
 async function getTokenBalance(account) {
   var balance = await token.methods.balanceOf(account).call();
@@ -68,29 +68,29 @@ async function tokenName() {
   return name;
 }
 
-async function tokenSIROCommunityReserveAllocation() {
-  let siroCommunityReserveAllocation = await token.methods.SIROCommunityReserveAllocation().call();
-  return siroCommunityReserveAllocation;
+async function tokenTIIMCommunityReserveAllocation() {
+  let TIIMCommunityReserveAllocation = await token.methods.TIIMCommunityReserveAllocation().call();
+  return TIIMCommunityReserveAllocation;
 }
 
-async function tokenSIROCrowdFundAllocation() {
-  let SIROCrowdFundAllocation = await token.methods.SIROCrowdFundAllocation().call();
-  return SIROCrowdFundAllocation;
+async function tokenTIIMCrowdFundAllocation() {
+  let TIIMCrowdFundAllocation = await token.methods.TIIMTokenSaleAllocation().call();
+  return TIIMCrowdFundAllocation;
 }
 
-async function tokenSIROEcoAllocation() {
-  let SIROEcoAllocation = await token.methods.SIROEcoAllocation().call();
-  return SIROEcoAllocation;
+async function tokenTIIMEcoAllocation() {
+  let TIIMEcoAllocation = await token.methods.TIIMEcosystemAllocation().call();
+  return TIIMEcoAllocation;
 }
 
-async function tokenSIROCompanyAllocation() {
-  let SIROCompanyAllocation = await token.methods.SIROCompanyAllocation().call();
-  return SIROCompanyAllocation;
+async function tokenTIIMCompanyAllocation() {
+  let TIIMCompanyAllocation = await token.methods.TIIMCompanyReserveAllocation().call();
+  return TIIMCompanyAllocation;
 }
 
-async function tokenSIROTeamAllocation() {
-  let SIROTeamAllocation = await token.methods.SIROTeamAllocation().call();
-  return SIROTeamAllocation;
+async function tokenTIIMTeamAllocation() {
+  let TIIMTeamAllocation = await token.methods.totalTeamAllocated().call();
+  return TIIMTeamAllocation;
 }
 
 async function getAccount() {
@@ -98,7 +98,7 @@ async function getAccount() {
   return accounts[0];
 }
 
-SIROCommunityReserveAllocation = async()=> {
-  let allocation = await token.methods.SIROCommunityReserveAllocation().call();
+TIIMCommunityReserveAllocation = async()=> {
+  let allocation = await token.methods.TIIMCommunityReserveAllocation().call();
   return allocation;
 }
