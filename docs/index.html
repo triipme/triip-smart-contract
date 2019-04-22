@@ -1,7 +1,9 @@
 <!DOCTYPE html>
+<html lang="en">
 <html>
   <head>
     <title>Triip - Smart Contracts Visualised</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="./css/app.css"/>
@@ -13,7 +15,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>$(document).ready(function() { initPage(); });</script>
   </head>
-  <body class="container" onload>
+  <body class="container-fluid" onload>
     <h1>Triip's Smart Contract Visualised</h1>
     <hr />
 
@@ -42,57 +44,59 @@
 
     <!-- New UI section -->
     <div id="contractData">
-      <div class="container">
+      Viewing Smart Token Contract at
+      <span class="text-info" id="ContractAddress"></span>
+      <hr />
 
-        Viewing Smart Token Contract at
-        <span class="text-info" id="ContractAddress"></span>
-        <hr />
+      <!-- Your Wallet Address:
+      <span class="text-primary async-value-holder" id="Wallet"></span>
+      <br/>
+      <br/>
+      Balance:
+      <span id="Balance" class="text-success async-value-holder"></span> in TOMO. -->
+      <!-- <hr /> -->
 
-        <!-- Your Wallet Address:
-        <span class="text-primary async-value-holder" id="Wallet"></span>
-        <br/>
-        <br/>
-        Balance:
-        <span id="Balance" class="text-success async-value-holder"></span> in TOMO. -->
-        <!-- <hr /> -->
-
-        <div class="row">
-          <div class="col-4">Token name:</div>
-          <div class="col-6"><span class='async-value-holder' id="TokenName"></span></div>
-        </div>
-
-        <div class="row">
-          <div class="col-4">Your Token balance:</div>
-          <div class="col-6"><span class='async-value-holder' id="TokenBalance"></span></div>
-        </div>
-
-        <div class="row">
-          <div class="col-4">TIIM Community Reserve Allocation:</div>
-          <div class="col-6"><span class='async-value-holder' id="TIIMCommunityReserveAllocation"></span></div>
-        </div>
-
-        <div class="row">
-          <div class="col-4">TIIM Token Sale Allocation:</div>
-          <div class="col-6"><span class='async-value-holder' id="TIIMCrowdFundAllocation"></span></div>
-        </div>
-
-        <div class="row">
-          <div class="col-4">TIIM Ecosystem Allocation:</div>
-          <div class="col-6"><span class='async-value-holder' id="TIIMEcoAllocation"></span></div>
-        </div>
-
-        <div class="row">
-          <div class="col-4">TIIM Company Reserve Allocation:</div>
-          <div class="col-6"><span class='async-value-holder' id="TIIMCompanyAllocation"></span></div>
-        </div>
-
-        <div class="row">
-          <div class="col-4">Team Token Allocated:</div>
-          <div class="col-6"><span class='async-value-holder' id="TIIMTeamAllocation"></span></div>
-        </div>
-
-        <br />
+      <div class="row">
+        <div class="col-4">Token name:</div>
+        <div class="col-8"><span class='async-value-holder' id="TokenName"></span></div>
       </div>
+
+      <div class="row">
+        <div class="col-4">Your Token balance:</div>
+        <div class="col-8"><span class='async-value-holder' id="TokenBalance"></span></div>
+      </div>
+
+      <div class="row">
+        <div class="col-4">Community Reserve Allocation:</div>
+        <div class="col-8"><span class='async-value-holder' id="TIIMCommunityReserveAllocation"></span></div>
+      </div>
+
+      <div class="row">
+        <div class="col-4">Token Sale Allocation:</div>
+        <div class="col-8"><span class='async-value-holder' id="TIIMCrowdFundAllocation"></span></div>
+      </div>
+
+      <div class="row">
+        <div class="col-4">Ecosystem Allocation:</div>
+        <div class="col-8"><span class='async-value-holder' id="TIIMEcoAllocation"></span></div>
+      </div>
+
+      <div class="row">
+        <div class="col-4">Company Reserve Allocation:</div>
+        <div class="col-8"><span class='async-value-holder' id="TIIMCompanyAllocation"></span></div>
+      </div>
+
+      <div class="row">
+        <div class="col-4">Team Token Allocated:</div>
+        <div class="col-8"><span class='async-value-holder' id="TIIMTeamAllocation"></span></div>
+      </div>
+
+      <hr>
+      <small class="text-muted">
+        View this page's source code and <a href="./js/app.js" target="_blank">app.js</a> to verify the contract's functions.
+      </small>
+
+      <br />
     </div>
 
     <div id="spinner" class='d-none'>

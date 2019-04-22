@@ -1,4 +1,4 @@
-// contracts.triip.me
+// Connect to blockchain network via Web3
 
 // Connect to TOMO MainNet only
 var web3 = new Web3(new Web3.providers.HttpProvider("https://rpc.tomochain.com"));
@@ -23,7 +23,7 @@ async function initPage() {
       $("#needlogin, #contractData").show();
     } else {
       // Basic labels
-      $("#ContractAddress").text(contract_address);
+      $("#ContractAddress").html("<a href='https://scan.tomochain.com/tokens/" + contract_address + "' target='_blank'>" + contract_address + "</a>");
       // Show spinner UI
       $(".async-value-holder").append($("#spinner").clone().removeClass('d-none'));
       // Fetch data
