@@ -1,6 +1,5 @@
 const Patron = artifacts.require("Patron");
-const PatronSetting = artifacts.require("PatronSetting");
-const PatronStaking = artifacts.require("PatronStaking");
+const PatronReward = artifacts.require("PatronReward");
 
 const SLEEP = 15000;
 const frequenceInSeconds = 1800;
@@ -11,10 +10,10 @@ const minimumUnstakeAmount = 10;
 
 module.exports = async (deployer, network, accounts) => {
 
-  deployer.deploy(PatronStaking);
+  // deployer.deploy(PatronStaking);
 
-  deployer.deploy(Patron);
-  
-  deployer.deploy(PatronSetting, frequenceInSeconds, frequenceRewardAmount, withdrawalDelayInSeconds, minimumStakeAmount, minimumUnstakeAmount);
+  deployer.deploy(Patron, frequenceInSeconds, frequenceRewardAmount, withdrawalDelayInSeconds, minimumStakeAmount, minimumUnstakeAmount);
+  //"1800","1000","604800","100","10"
+  // deployer.deploy(PatronSetting, frequenceInSeconds, frequenceRewardAmount, withdrawalDelayInSeconds, minimumStakeAmount, minimumUnstakeAmount);
   
 };
