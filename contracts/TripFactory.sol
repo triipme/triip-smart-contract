@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 import "./TripVerifier.sol";
+import "./ERC677Receiver.sol";
 
 contract TripFactory {
     
@@ -83,7 +84,7 @@ contract Trip is Pausable {
             validBookingAddress[booking] = true;
             emit BookingCreation(booking, _traveller);
         }else{
-            revert();
+            revert("This Trip have not public yet");
         }
         
     }
@@ -97,28 +98,31 @@ contract Trip is Pausable {
         avgRating = (_rating + (avgRating * reviewCount)) / (reviewCount+1);
         reviewCount = reviewCount.add(1);
         
-        if(status == Status.NEW) {
-            publicTrip();
+        if(status == Status.NEW && avgRating > avgRatingTrigger && reviewCount > reviewCountTrigger) {
+            status = Status.PUBLIC;
             emit PublicTrip();
         }
         
         emit Rating(msg.sender, _rating, avgRating);
     }
-    
-    function publicTrip() internal {
-        if(avgRating > avgRatingTrigger && reviewCount > reviewCountTrigger) {
-            status = Status.PUBLIC;
-        }
-    }
 }
 
-contract Booking {
+contract Booking is ERC677Receiver {
     
     using SafeMath for uint;
     
     enum Status { NEW, APPROVED, PAID, FINISHED, COMPLETED, REJECTED, TRAVELLER_CANCELED, SUPPLIER_CANCELED, REPORTED }
-    
+    event APPROVED();
     event PAID(address indexed who);
+    event FINISHED(uint _finished_at);
+    event WITHDRAWAL(uint _withdrawal_amount, uint _withdrawal_at);
+    event RATING(uint _rating);
+    event COMPLETED();
+    event REJECTED();
+    event TRAVELLER_CANCELED();
+    event SUPPLIER_CANCELED();
+    event REPORTED();
+    
     Trip public trip;
     
     address public tripSupplier;
@@ -132,21 +136,26 @@ contract Booking {
     // hard code for testing
     uint public endTime = 123;
     
-    ERC20 public token;
+    ERC20 public tiimToken;
     
-    
+    modifier onlyTIIMToken() {
+        require(tiimToken != address(0), 'TIIM Token contract should be set already');
+        require(msg.sender == address(tiimToken), 'Sender must be a TIIM Token contract' );
+        _;
+    }
+
     constructor(
             address _tripSupplier, 
             address _traveller, 
             address _trip,
-            ERC20 _token,
+            address _token,
             uint _amount
             ) public {
         tripSupplier = _tripSupplier;
         traveller = _traveller;
         trip = Trip(_trip);
         bookingAmount = _amount;
-        token = _token;
+        tiimToken = ERC20(_token);
     }
     
     modifier onlyTripSupplier() {
@@ -159,13 +168,17 @@ contract Booking {
         _;
     }
     
-    function approve() public {
+    function approve() onlyTripSupplier public {
         require(status == Status.NEW, "Status must be New");
         status = Status.APPROVED;
+        emit APPROVED();
+    }
+
+    function onTokenTransfer(address _from, uint _amount, bytes _data) public onlyTIIMToken returns (bool) {   
+      return pay(_from, _amount);
     }
     
-    function pay(address _from, uint _amount) public returns(bool) {
-        require(address(token) == msg.sender, "Only invoke by call back from pay token");
+    function pay(address _from, uint _amount) private returns(bool) {
         require(status == Status.APPROVED, "Status must be Approved");
         require(_amount == bookingAmount, "Require pay amount equals booking amount");
         
@@ -178,18 +191,20 @@ contract Booking {
     
     function finish(uint _rating) public onlyTraveller {
         require(status == Status.PAID, "Status must be Paid");
-        require(_rating >= 0);
-        require(rating == 0, "Must not rate yet");
+        require(_rating > 0, "Must give rating");
         require(now > endTime, "Rating after end trip");
         
         rating = _rating;
         status = Status.FINISHED;
         trip.rating(_rating);
+        emit FINISHED(now);
+        emit RATING(_rating);
     }
     
     function withdrawal() public onlyTripSupplier {
         require(status == Status.FINISHED, "Status must be Finished");
-        token.transfer(tripSupplier, bookingAmount);
+        tiimToken.transfer(tripSupplier, bookingAmount);
+        emit WITHDRAWAL(bookingAmount, now);
     }
     
     function tokenFallback(address _from, uint _value, bytes memory _data) public returns(bool) {
