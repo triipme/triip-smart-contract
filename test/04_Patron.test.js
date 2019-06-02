@@ -1,9 +1,8 @@
 const Patron = artifacts.require("Patron");
-const PatronSetting = artifacts.require("PatronSetting");
-const PatronStaking = artifacts.require("PatronStaking");
+const PatronReward = artifacts.require("PatronReward");
 const TIIMToken = artifacts.require("TIIMToken");
 
-const { MILLION, UNIT } = require("../lib/utils");
+const { MILLION, UNIT, increaseTime, duration } = require("../lib/utils");
 
 const FREQUENCE_IN_SECONDS = 3600;
 const _WITHDRAWAL_DELAY_IN_SECONDS = 3600 * 48;
@@ -13,7 +12,7 @@ const REWARD_EXPECTED_BALANCE = 25 * MILLION * UNIT;
 let OWNER;
 let NON_OWNER;
 let PATRON;
-let PATRON_SETTING;
+let PATRON_REWARD;
 let PATRON_STAKING;
 
 let TIIM_TOKEN;
@@ -27,10 +26,10 @@ let FOUNDER_WALLET;
 let ANONYMOUS;
 
 const frequenceInSeconds = 1800;
-const frequenceRewardAmount = 1000;
+const frequenceRewardAmount = 1000 * UNIT;
 const withdrawalDelayInSeconds = 604800; // 7 days
-const minimumStakeAmount = 100;
-const minimumUnstakeAmount = 10;
+const minimumStakeAmount = 100 * UNIT;
+const minimumUnstakeAmount = 10 * UNIT;
 
 contract("Patron Testing", accounts => {
   beforeEach("Init", async () => {
@@ -54,6 +53,8 @@ contract("Patron Testing", accounts => {
       FOUNDER_WALLET
     );
 
+    PATRON_REWARD = await PatronReward.new();
+
     PATRON = await Patron.new(
       frequenceInSeconds,
       frequenceRewardAmount,
@@ -63,7 +64,14 @@ contract("Patron Testing", accounts => {
     );
 
     await PATRON.setTiimToken(TIIM_TOKEN.address);
+    await PATRON.setPatronReward(PATRON_REWARD.address);
 
+
+    await PATRON_REWARD.setTiimToken(TIIM_TOKEN.address);
+    await PATRON_REWARD.setPatron(PATRON.address);
+
+    // send token to reward pool
+    await TIIM_TOKEN.transfer(PATRON_REWARD.address, 1000000 * UNIT);
   });
 
   it("Total staking amount should 0 when init", async () => {
@@ -87,13 +95,24 @@ contract("Patron Testing", accounts => {
 
   it("Unstake when not stake should receive exception", async () => {
     try {
-      await PATRON.unstake(15);
-
+      await PATRON.unstake(15 * UNIT);
       assert(false, "Should not come here");
     } catch (err) {
       assert.include(
         err.message,
         "Staking balance should be greater or equals with unstake amount"
+      );
+    }
+  });
+
+  it("Unstake under minimum unstake setting should receive exception", async () => {
+    try {
+      await PATRON.unstake(15);
+      assert(false, "Should not come here");
+    } catch (err) {
+      assert.include(
+        err.message,
+        "Unstake must be greater than minimum unstake amount"
       );
     }
   });
@@ -106,13 +125,60 @@ contract("Patron Testing", accounts => {
       assert.include(err.message, 'Should have withdrawal pending');
     }
   });
-  it('Staking', async() => {
+
+  it('Stake less than minimum required should receive exception', async() => {
+    const stakingAmount = 99 * UNIT;
+    try {
+      await TIIM_TOKEN.transferAndCall(PATRON.address, stakingAmount, "0x", {from: COMMUNITY_WALLET});
+      assert(false, "Should not come here");
+    } catch(err) {
+      assert.include(err.message, "Must equals or greater than minimum staking amount");
+    }
+  });  
+
+  it('Staking over minimum staking should be success', async() => {
     
-      const tx = await TIIM_TOKEN.transferAndCall(PATRON.address, 100, "0x", {from: COMMUNITY_WALLET});
+      const stakingAmount = 100 * UNIT;
+      const tx = await TIIM_TOKEN.transferAndCall(PATRON.address, stakingAmount, "0x", {from: COMMUNITY_WALLET});
 
-      // console.log(tx.logs);
+      const logs = tx.logs[1].args;
 
-      var waitingBalance = await PATRON.waiting_list(0);
+      assert(logs.sender, OWNER);
+      assert(logs._to, PATRON.address);
+      assert(logs._purchase_amount, stakingAmount);      
+    
+  });
+
+  it('Test dispatch reward' , async() => {
+    // stake 1000
+    await TIIM_TOKEN.transferAndCall(PATRON.address, 1000 * UNIT, "0x", {from: COMMUNITY_WALLET});
+
+    // stake 9000
+    await TIIM_TOKEN.transferAndCall(PATRON.address, 9000 * UNIT, "0x", {from: CROWD_FUNDING_WALLET});
+
+    var waiting1 = await PATRON.waiting_list(0);
+
+    assert(waiting1[0], COMMUNITY_WALLET, "Staker should be from COMMUNITY_WALLET");
+    assert(waiting1[1], 1000 * UNIT, "Staking amount from COMMUNITY_WALLET should be 1000 Token");
+
+    var waiting2 = await PATRON.waiting_list(1);
+    assert(waiting2[0], CROWD_FUNDING_WALLET, "Staker should be from CROWD_FUNDING_WALLET");
+    assert(waiting2[1], 9000 * UNIT, "Staking amount from CROWD_FUNDING_WALLET should be 1000 Token");
+
+    var totalStaking = await PATRON.total_staking_amount();
+    assert(totalStaking, 0, "Total staking should be zero 0");
+
+    var rewardBalance = await TIIM_TOKEN.balanceOf(PATRON_REWARD.address);
+    assert(rewardBalance, 1000000 * UNIT, "Reward pool should be 1m");
+
+    await increaseTime(duration.minutes(30));
+    
+    const tx = await PATRON.triggerPatronReward();
+    console.log(tx);
+
+  })
+
+      // var waitingBalance = await PATRON.waiting_list(0);
 
       // console.log(waitingBalance);
 
@@ -122,18 +188,17 @@ contract("Patron Testing", accounts => {
 
       // console.log(waitingBalance);
 
-      const lastTrigger = new Date() . getTime () / 1000 - 1900;
+      // const lastTrigger = new Date() . getTime () / 1000 - 1900;
 
-      await PATRON.setLastTriggerPatronRewardAt(lastTrigger);
+      // await PATRON.setLastTriggerPatronRewardAt(lastTrigger);
       
-      const tx1 = await PATRON.triggerPatronReward();
+      // const tx1 = await PATRON.triggerPatronReward();
 
-      console.log(tx1.logs);
+      // console.log(tx1.logs[3].args._amount);
 
       // const epoch = await PATRON.epoch();
 
       // console.log(epoch);
-    
-  });
+
   
 });
