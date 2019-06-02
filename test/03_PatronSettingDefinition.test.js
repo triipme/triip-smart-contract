@@ -1,6 +1,4 @@
 const Patron = artifacts.require('Patron');
-const PatronSetting = artifacts.require('PatronSetting');
-const PatronStaking = artifacts.require('PatronStaking');
 const TIIMToken = artifacts.require('TIIMToken');
 
 const {

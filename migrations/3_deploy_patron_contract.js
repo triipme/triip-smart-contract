@@ -16,6 +16,4 @@ module.exports = async (deployer, network, accounts) => {
   
   deployer.deploy(Patron, frequenceInSeconds, frequenceRewardAmount, withdrawalDelayInSeconds, minimumStakeAmount, minimumUnstakeAmount);
   //"1800","1000000000000000000000","604800","100000000000000000000","10000000000000000000"
-  // deployer.deploy(PatronSetting, frequenceInSeconds, frequenceRewardAmount, withdrawalDelayInSeconds, minimumStakeAmount, minimumUnstakeAmount);
-  
 };

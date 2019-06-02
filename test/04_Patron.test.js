@@ -174,7 +174,6 @@ contract("Patron Testing", accounts => {
     await increaseTime(duration.minutes(30));
     
     const tx = await PATRON.triggerPatronReward();
-    console.log(tx);
 
   })
 
