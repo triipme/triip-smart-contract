@@ -1,5 +1,7 @@
 pragma solidity ^0.4.25;
 
+import "./FeeScheme.sol";
+import "./BytesUtils.sol";
 
 /**
  * @title Ownable
@@ -190,6 +192,11 @@ contract ITRC21 {
   event Fee(address indexed from, address indexed to, address indexed issuer, uint value);
 }
 
+contract ERC677Receiver {
+  function onTokenTransfer(address _sender, uint _amount) public;
+  function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public;
+  function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
+}
 
 /**
  * @title Basic token
@@ -245,16 +252,37 @@ contract TRC21 is ITRC21 {
   * @param _value The amount to be transferred.
   */
   function transfer(address _to, uint _value) public returns (bool) {
+    
     require(_value <= balances[msg.sender]);
     require(_to != address(0));
 
+    uint _fee = estimateFee(_value);
+    uint amountReceived = _value.sub(fee);
 
+    _transfer(msg.sender, _to, amountReceived)
+    emit Transfer(msg.sender, _to, amountReceived);
+    
+    if (_fee > 0) {
+        _transfer(msg.sender, _issuer, _fee);
+        emit Fee(msg.sender, to, _issuer, _fee);
+    }
 
-    balances[msg.sender] = balances[msg.sender].sub(_value);
-    balances[_to] = balances[_to].add(_value);
-    emit Transfer(msg.sender, _to, _value);
     return true;
   }
+
+    /**
+     * @dev Transfer token for a specified addresses
+     * @param from The address to transfer from.
+     * @param to The address to transfer to.
+     * @param value The amount to be transferred.
+     */
+    function _transfer(address from, address to, uint256 value) internal {
+        require(value <= _balances[from]);
+        require(to != address(0));
+        _balances[from] = _balances[from].sub(value);
+        _balances[to] = _balances[to].add(value);
+        emit Transfer(from, to, value);
+    }  
 
   /**
   * @dev Gets the balance of the specified address.
@@ -347,14 +375,7 @@ contract TRC21 is ITRC21 {
   }
 }
 
-
-contract ERC677Receiver {
-  function onTokenTransfer(address _sender, uint _amount) public;
-  function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public;
-  function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
-}
-
-contract SIROToken is TRC21, Ownable, Pausable {
+contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
 
     using SafeMath for uint;
 
@@ -412,6 +433,8 @@ contract SIROToken is TRC21, Ownable, Pausable {
     uint    public constant conversionRate = 40;                                            // 1 TOMO = 40 SIRO
     uint    public constant minimumContribute = 10;                                         // contribute amount has to be equal or greater than 10 TOMO
 
+    IFeeScheme public feeScheme;
+
 
     function setEndTimeForTesting(uint _endTime) public onlyOwner returns (bool) {
       endTime = _endTime;
@@ -425,7 +448,7 @@ contract SIROToken is TRC21, Ownable, Pausable {
                 address _teamWallet,
                 address _founderWallet,
                 address _SIROCrowdFundTomoAllocationWallet,
-                uint _fee
+                address _feeScheme
                 ) public {
                     
         SIROCommunityReserveWallet = _SIROCommunityReserveWallet;
@@ -443,9 +466,13 @@ contract SIROToken is TRC21, Ownable, Pausable {
         balances[SIROCrowdFundTomoAllocationWallet] = balances[SIROCrowdFundTomoAllocationWallet].add(SIROCrowdFundTomoAllocation);
 
         _changeIssuer(msg.sender);
-        _changeFee(_fee);
+        feeScheme = FeeScheme(_feeScheme);
 
         pause();
+    }
+
+    function estimateFee(uint value) external view returns (uint) {
+        return feeScheme.estimateFeeByTransactionType(value, 0);
     }
 
     /**
@@ -467,64 +494,33 @@ contract SIROToken is TRC21, Ownable, Pausable {
     }
 
     /**
-    * @dev transfer token to a contract address with additional data if the recipient is a contact.
+    * @dev ERC677 transfer token to a contract address with additional data if the recipient is a contact.
     * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
-    */
-    function transferAndCall(address _to, uint _amount) public whenNotPaused returns (bool success)    {
-        transfer(_to, _amount);
-        
-        if (isContract(_to)) {
-            
-            ERC677Receiver receiver = ERC677Receiver(_to);
-            
-            receiver.onTokenTransfer(msg.sender, _amount);
-        }
-        
-        return true;
-    }
-
-    /**
-    * @dev transfer token to a contract address with additional data if the recipient is a contact.
-    * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
+    * @param _value The amount to be transferred.
     * @param _data The extra data to be passed to the receiving contract.
     */
-    function transferAndCallWithData(address _to, uint _amount, bytes _data) public whenNotPaused returns (bool success)    {
-        transfer(_to, _amount);
-        
-        emit Transfer(msg.sender, _to, _amount, _data);
-        
-        if (isContract(_to)) {
-            
-            ERC677Receiver receiver = ERC677Receiver(_to);
-            
-            receiver.onTokenTransferWithByte(msg.sender, _amount, _data);
-        }
-        
-        return true;
-    }
+    function transferAndCall(address _to, uint _value, bytes _data) public whenNotPaused returns (bool success) {
+      
+      require(_value <= balanceOf(msg.sender));
+      require(_to != address(0));
 
-    /**
-    * @dev transfer token to a contract address with additional data if the recipient is a contact.
-    * @param _to The address to transfer to.
-    * @param _amount The amount to be transferred.
-    * @param _enum_ordinal The enum ordinal function on receiving contract.
-    */
-    function transferAndCallWithUint(address _to, uint _amount, uint _enum_ordinal) public whenNotPaused returns (bool success)    {
-        
-        transfer(_to, _amount);
+      uint _transactionFeeType = sliceBytes(_data, 0, 3); // allocated 3 first number in data for Transaction Fee Type - max TX type 999
+      uint _fee = estimateFeeByTransactionType(_value, _transactionFeeType);
 
-        emit Transfer(msg.sender, _to, _amount, _enum_ordinal);
-        
-        if (isContract(_to)) {
-            
-            ERC677Receiver receiver = ERC677Receiver(_to);
-            
-            receiver.onTokenTransferWithUint(msg.sender, _amount, _enum_ordinal);
-        }
-        
-        return true;
+      uint _amountReceived = _value.sub(_fee);
+
+      super._transfer(msg.sender, _to, _amountReceived)
+      emit Transfer(msg.sender, _to, _value, _data);
+
+      if (_fee > 0) {
+        super._transfer(msg.sender, _issuer, _fee);
+        emit Fee(msg.sender, to, _issuer, _fee);
+      }
+      
+      if (isContract(_to)) {
+        contractFallback(_to, _value, _data);
+      }
+      return true;
     }
 
     function isContract(address _addr) private view returns (bool hasCode)  {
