@@ -4,68 +4,6 @@ import "./FeeScheme.sol";
 import "./BytesUtils.sol";
 
 /**
- * @title Ownable
- * @dev The Ownable contract has an owner address, and provides basic authorization control
- * functions, this simplifies the implementation of "user permissions".
- */
-contract Ownable {
-  address public owner;
-
-
-  event OwnershipRenounced(address indexed previousOwner);
-  event OwnershipTransferred(
-    address indexed previousOwner,
-    address indexed newOwner
-  );
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  constructor() public {
-    owner = msg.sender;
-  }
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(msg.sender == owner);
-    _;
-  }
-
-  /**
-   * @dev Allows the current owner to relinquish control of the contract.
-   * @notice Renouncing to ownership will leave the contract without an owner.
-   * It will not be possible to call the functions with the `onlyOwner`
-   * modifier anymore.
-   */
-  function renounceOwnership() public onlyOwner {
-    emit OwnershipRenounced(owner);
-    owner = address(0);
-  }
-
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param _newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address _newOwner) public onlyOwner {
-    _transferOwnership(_newOwner);
-  }
-
-  /**
-   * @dev Transfers control of the contract to a newOwner.
-   * @param _newOwner The address to transfer ownership to.
-   */
-  function _transferOwnership(address _newOwner) internal {
-    require(_newOwner != address(0));
-    emit OwnershipTransferred(owner, _newOwner);
-    owner = _newOwner;
-  }
-}
-
-/**
  * @title Pausable
  * @dev Base contract which allows children to implement an emergency stop mechanism.
  */
@@ -108,59 +46,6 @@ contract Pausable is Ownable {
     emit Unpause();
   }
 }
-
-
-/**
- * @title SafeMath
- * @dev Math operations with safety checks that throw on error
- */
-library SafeMath {
-
-  /**
-  * @dev Multiplies two numbers, throws on overflow.
-  */
-  function mul(uint _a, uint _b) internal pure returns (uint c) {
-    // Gas optimization: this is cheaper than asserting 'a' not being zero, but the
-    // benefit is lost if 'b' is also tested.
-    // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
-    if (_a == 0) {
-      return 0;
-    }
-
-    c = _a * _b;
-    assert(c / _a == _b);
-    return c;
-  }
-
-  /**
-  * @dev Integer division of two numbers, truncating the quotient.
-  */
-  function div(uint _a, uint _b) internal pure returns (uint) {
-    // assert(_b > 0); // Solidity automatically throws when dividing by 0
-    // uint c = _a / _b;
-    // assert(_a == _b * c + _a % _b); // There is no case in which this doesn't hold
-    return _a / _b;
-  }
-
-  /**
-  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
-  */
-  function sub(uint _a, uint _b) internal pure returns (uint) {
-    assert(_b <= _a);
-    return _a - _b;
-  }
-
-  /**
-  * @dev Adds two numbers, throws on overflow.
-  */
-  function add(uint _a, uint _b) internal pure returns (uint c) {
-    c = _a + _b;
-    assert(c >= _a);
-    return c;
-  }
-}
-
-
 /**
  * @title ITRC21
  * @dev TRC21 interface
@@ -465,21 +350,17 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
         balances[SIROCrowdFundTomoAllocationWallet] = balances[SIROCrowdFundTomoAllocationWallet].add(SIROCrowdFundTomoAllocation);
 
         _changeIssuer(msg.sender);
-        feeScheme = FeeScheme(_feeScheme);
+        feeScheme = IFeeScheme(_feeScheme);
 
         pause();
     }
 
     function setFeeScheme(address _newFeeScheme) onlyOwner public {
-        feeScheme = FeeScheme(_newFeeScheme);
+        feeScheme = IFeeScheme(_newFeeScheme);
     }
 
     function estimateFee(uint _value) public view returns (uint) {
         return feeScheme.estimateFee(_value);
-    }
-
-    function estimateContractFee(address _contract, uint _value) external view returns (uint) {
-        return feeScheme.estimateContractFee(_contract, _value);
     }
 
     /**
