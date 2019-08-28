@@ -146,12 +146,13 @@ contract TRC21 is ITRC21 {
     uint _amountReceived = _value.sub(_transferFee);
 
     _transfer(msg.sender, _to, _amountReceived);
+    emit Transfer(msg.sender, _to, _amountReceived);
     
     if (_transferFee > 0) {
         _transfer(msg.sender, _issuer, _transferFee);
         emit Fee(msg.sender, _to, _issuer, _transferFee);
     }
-
+    
     return true;
   }
 
@@ -166,7 +167,6 @@ contract TRC21 is ITRC21 {
         require(to != address(0));
         balances[from] = balances[from].sub(value);
         balances[to] = balances[to].add(value);
-        emit Transfer(from, to, value);
     }  
 
   /**
@@ -266,7 +266,6 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
 
     event Released(address indexed receiver, uint amount);
     event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
-    event Transfer(address indexed sender, address indexed _to, uint _amount, uint _enum_ordinal);
     event Buy(address indexed _contributor, uint _SIRO_sold);
     event Refund(address indexed _patron_wallet, uint _SIRO_remaining_token);
 
@@ -363,6 +362,10 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
         return feeScheme.estimateFee(_value);
     }
 
+    function estimateContractFee(address _contract, uint _value) public view returns (uint) {
+        return _contract.estimateFee(_value);
+    }
+
     /**
     * @dev ensure function call after endTime ICO
     */
@@ -389,13 +392,27 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
     */
     function transferAndCall(address _to, uint _value, bytes _data) public whenNotPaused returns (bool success) {
       
-      super.transfer(_to, _value);
-      emit Transfer(msg.sender, _to, _value, _data);
-      
-      if (isContract(_to)) {
-        contractFallback(_to, _value, _data);
-      }
-      return true;
+        require(_value <= balances[msg.sender]);
+        require(_to != address(0));
+
+        uint _transferFee = estimateFee(_value);
+        if (isContract(_to)) {
+            _transferFee = estimateContractFee(_to, _value);
+        }
+        uint _amountReceived = _value.sub(_transferFee);
+        
+        _transfer(msg.sender, _to, _amountReceived);
+        emit Transfer(msg.sender, _to, _amountReceived, _data);
+
+        if (_transferFee > 0) {
+            _transfer(msg.sender, _issuer, _transferFee);
+            emit Fee(msg.sender, _to, _issuer, _transferFee);
+        }
+
+        if (isContract(_to)) {
+            contractFallback(_to, _value, _data);
+        }
+        return true;
     }
     
     function contractFallback(address _to, uint _value, bytes _data) private {
