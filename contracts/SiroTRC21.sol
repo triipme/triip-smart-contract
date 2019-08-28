@@ -65,7 +65,6 @@ contract Ownable {
   }
 }
 
-
 /**
  * @title Pausable
  * @dev Base contract which allows children to implement an emergency stop mechanism.
@@ -171,7 +170,7 @@ contract ITRC21 {
 
   function issuer() external view returns (address);
 
-  function estimateFee(uint value) external view returns (uint);
+  function estimateFee(uint value) public view returns (uint);
 
   function totalSupply() public view returns (uint);
   
@@ -193,9 +192,7 @@ contract ITRC21 {
 }
 
 contract ERC677Receiver {
-  function onTokenTransfer(address _sender, uint _amount) public;
-  function onTokenTransferWithUint(address _sender, uint _amount, uint _enum_ordinal) public;
-  function onTokenTransferWithByte(address _sender, uint _amount, bytes _data) public;
+  function onTokenTransfer(address from, uint256 amount, bytes data) returns (bool success);
 }
 
 /**
@@ -209,10 +206,18 @@ contract TRC21 is ITRC21 {
   mapping(address => uint) internal balances;
   mapping(address => mapping (address => uint)) internal allowed;
 
-  uint256 private _fee;
+  uint private _fee;
   address private _issuer;
 
   uint internal totalSupply_;
+    
+    /**
+     * @dev Estimate transaction fee.
+     * @param value amount tokens sent
+     */
+    function estimateFee(uint value) public view returns (uint256) {
+        return value.mul(0).add(_fee);
+    }
 
   /**
      * @dev Transfers token's foundation to new issuer
@@ -235,10 +240,6 @@ contract TRC21 is ITRC21 {
         return _issuer;
     }
 
-    function estimateFee(uint value) external view returns (uint){
-        return value + ( value * _fee / 100 ) ;
-    }
-
   /**
   * @dev Total number of tokens in existence
   */
@@ -256,15 +257,14 @@ contract TRC21 is ITRC21 {
     require(_value <= balances[msg.sender]);
     require(_to != address(0));
 
-    uint _fee = estimateFee(_value);
-    uint amountReceived = _value.sub(fee);
+    uint _transferFee = estimateFee(_value);
+    uint _amountReceived = _value.sub(_transferFee);
 
-    _transfer(msg.sender, _to, amountReceived)
-    emit Transfer(msg.sender, _to, amountReceived);
+    _transfer(msg.sender, _to, _amountReceived);
     
-    if (_fee > 0) {
-        _transfer(msg.sender, _issuer, _fee);
-        emit Fee(msg.sender, to, _issuer, _fee);
+    if (_transferFee > 0) {
+        _transfer(msg.sender, _issuer, _transferFee);
+        emit Fee(msg.sender, _to, _issuer, _transferFee);
     }
 
     return true;
@@ -277,10 +277,10 @@ contract TRC21 is ITRC21 {
      * @param value The amount to be transferred.
      */
     function _transfer(address from, address to, uint256 value) internal {
-        require(value <= _balances[from]);
+        require(value <= balances[from]);
         require(to != address(0));
-        _balances[from] = _balances[from].sub(value);
-        _balances[to] = _balances[to].add(value);
+        balances[from] = balances[from].sub(value);
+        balances[to] = balances[to].add(value);
         emit Transfer(from, to, value);
     }  
 
@@ -435,7 +435,6 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
 
     IFeeScheme public feeScheme;
 
-
     function setEndTimeForTesting(uint _endTime) public onlyOwner returns (bool) {
       endTime = _endTime;
       return true;
@@ -471,8 +470,16 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
         pause();
     }
 
-    function estimateFee(uint value) external view returns (uint) {
-        return feeScheme.estimateFeeByTransactionType(value, 0);
+    function setFeeScheme(address _newFeeScheme) onlyOwner public {
+        feeScheme = FeeScheme(_newFeeScheme);
+    }
+
+    function estimateFee(uint _value) public view returns (uint) {
+        return feeScheme.estimateFee(_value);
+    }
+
+    function estimateContractFee(address _contract, uint _value) external view returns (uint) {
+        return feeScheme.estimateContractFee(_contract, _value);
     }
 
     /**
@@ -501,26 +508,18 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
     */
     function transferAndCall(address _to, uint _value, bytes _data) public whenNotPaused returns (bool success) {
       
-      require(_value <= balanceOf(msg.sender));
-      require(_to != address(0));
-
-      uint _transactionFeeType = sliceBytes(_data, 0, 3); // allocated 3 first number in data for Transaction Fee Type - max TX type 999
-      uint _fee = estimateFeeByTransactionType(_value, _transactionFeeType);
-
-      uint _amountReceived = _value.sub(_fee);
-
-      super._transfer(msg.sender, _to, _amountReceived)
+      super.transfer(_to, _value);
       emit Transfer(msg.sender, _to, _value, _data);
-
-      if (_fee > 0) {
-        super._transfer(msg.sender, _issuer, _fee);
-        emit Fee(msg.sender, to, _issuer, _fee);
-      }
       
       if (isContract(_to)) {
         contractFallback(_to, _value, _data);
       }
       return true;
+    }
+    
+    function contractFallback(address _to, uint _value, bytes _data) private {
+      ERC677Receiver receiver = ERC677Receiver(_to);
+      receiver.onTokenTransfer(msg.sender, _value, _data);
     }
 
     function isContract(address _addr) private view returns (bool hasCode)  {

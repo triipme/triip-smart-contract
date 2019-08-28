@@ -1,6 +1,6 @@
 pragma solidity ^0.4.25;
 
-contract BytesUtil {
+contract BytesUtils {
     
     function sliceBytes(bytes data, uint fromIndex, uint toIndex) public pure returns (bytes) {
         
