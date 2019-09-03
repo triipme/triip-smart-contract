@@ -6,6 +6,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 interface IFeeScheme {
     
     function estimateFee(uint value) public view returns (uint);
+    
+    event FeeChanged(uint _fee, uint _newFee);
 
 }
 
@@ -30,6 +32,7 @@ contract FixedFeeScheme is IFeeScheme, Ownable {
     uint private minFee = 10 ** 16;
 
     function setFee(uint _minFee) public onlyOwner {
+        emit FeeChanged(minFee, _minFee);
         minFee = _minFee;
     }
 

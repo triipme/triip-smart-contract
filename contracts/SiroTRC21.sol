@@ -139,8 +139,8 @@ contract TRC21 is ITRC21 {
   */
   function transfer(address _to, uint _value) public returns (bool) {
     
-    require(_value <= balances[msg.sender]);
-    require(_to != address(0));
+    require(_value <= balances[msg.sender], "Balance of sender should greater than or equals with sending amount");
+    require(_to != address(0), "Receiver address must not be Zero");
 
     uint _transferFee = estimateFee(_value);
     uint _amountReceived = _value.sub(_transferFee);
