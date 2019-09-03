@@ -1,6 +1,13 @@
 const SIROToken = artifacts.require('SIROToken')
 const PercentageFeeSchemeContract = artifacts.require('PercentageFeeScheme')
 
+
+const {
+    MILLION,
+    UNIT
+  } = require('../lib/utils');
+
+  
 let SIRO
 
 let COMMUNITY_WALLET
@@ -10,7 +17,8 @@ let COMPANY_WALLET
 let TEAM_WALLET
 let FOUNDER_WALLET
 let TOMO_ALLOCATION_WALLET
-let FEE
+let PERCENTAGE_FEE_SCHEME
+
 
 contract('SIROToken', accounts => {
   
@@ -23,7 +31,8 @@ contract('SIROToken', accounts => {
     TEAM_WALLET = accounts[4]
     FOUNDER_WALLET = accounts[5]
     TOMO_ALLOCATION_WALLET = accounts[6]
-    FEE = 3
+
+    PERCENTAGE_FEE_SCHEME = await PercentageFeeSchemeContract.new()
 
     SIRO = await SIROToken.new(
       COMMUNITY_WALLET, 
@@ -33,14 +42,18 @@ contract('SIROToken', accounts => {
       TEAM_WALLET, 
       FOUNDER_WALLET,
       TOMO_ALLOCATION_WALLET,
-      FEE
+      PERCENTAGE_FEE_SCHEME.address
       )
+
+    SIRO.unpause()
   })
 
   describe('#transfer', async()=>{
     
     it('sends value - fee for receiver', async () => {
-
+        let tx = await SIRO.transfer(FOUNDER_WALLET, 100 * MILLION, {from: CROWD_FUNDING_WALLET});
+        console.log("TX: ", tx)
+        console.log("TX: ", tx.logs[1])
     })
 
     it('sends fee for issuer', async () => {
