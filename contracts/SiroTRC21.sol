@@ -53,7 +53,7 @@ contract Pausable is Ownable {
  */
 contract ITRC21 {
 
-  function issuer() external view returns (address);
+  function issuer() public view returns (address);
 
   function estimateFee(uint value) public view returns (uint);
 
@@ -106,11 +106,11 @@ contract TRC21 is ITRC21 {
 
   /**
      * @dev Transfers token's foundation to new issuer
-     * @param newIssuer The address to transfer ownership to.
+     * @param _newIssuer The address to transfer ownership to.
      */
-    function _changeIssuer(address newIssuer) internal {
-        require(newIssuer != address(0));
-        _issuer = newIssuer;
+    function _changeIssuer(address _newIssuer) internal {
+        require(_newIssuer != address(0));
+        _issuer = _newIssuer;
     }
 
     /**
@@ -121,7 +121,7 @@ contract TRC21 is ITRC21 {
         _fee = value;
     }
 
-    function issuer() external view returns (address){
+    function issuer() public view returns (address){
         return _issuer;
     }
 
@@ -268,6 +268,7 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
     event Transfer(address indexed sender, address indexed _to, uint _amount, bytes _data);
     event Buy(address indexed _contributor, uint _SIRO_sold);
     event Refund(address indexed _patron_wallet, uint _SIRO_remaining_token);
+    event IssuerTransferred(address indexed _issuer, address indexed _new_issuer);
 
     uint    public decimals = 18;
     string  public name = "SiroSmile";
@@ -354,6 +355,16 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
         pause();
     }
 
+    function changeIssuer(address _newIssuer) onlyOwner public returns(bool) {
+        require(_newIssuer != address(0), "New issuer address must not be address of Zero");
+
+        emit IssuerTransferred(issuer(), _newIssuer);
+        
+        _changeIssuer(_newIssuer);
+        
+        return true;
+    }
+
     function setFeeScheme(address _newFeeScheme) onlyOwner public {
         feeScheme = IFeeScheme(_newFeeScheme);
     }
@@ -363,7 +374,8 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
     }
 
     function estimateContractFee(address _contract, uint _value) public view returns (uint) {
-        return _contract.estimateFee(_value);
+        
+        return IFeeScheme(_contract).estimateFee(_value);
     }
 
     /**
@@ -405,8 +417,8 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
         emit Transfer(msg.sender, _to, _amountReceived, _data);
 
         if (_transferFee > 0) {
-            _transfer(msg.sender, _issuer, _transferFee);
-            emit Fee(msg.sender, _to, _issuer, _transferFee);
+            _transfer(msg.sender, issuer(), _transferFee);
+            emit Fee(msg.sender, _to, issuer(), _transferFee);
         }
 
         if (isContract(_to)) {
