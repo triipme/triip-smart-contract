@@ -334,6 +334,8 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
                 address _SIROCrowdFundTomoAllocationWallet,
                 address _feeScheme
                 ) public {
+
+        require(_feeScheme != address(0), "Fee scheme address must not be address of Zero");
                     
         SIROCommunityReserveWallet = _SIROCommunityReserveWallet;
         SIROCrowdFundAllocationWallet = _SIROCrowdFundAllocationWallet;
