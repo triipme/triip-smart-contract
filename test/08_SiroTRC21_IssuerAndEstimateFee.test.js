@@ -1,5 +1,6 @@
 const SIROToken = artifacts.require("SIROToken");
 const PercentageFeeSchemeContract = artifacts.require("PercentageFeeScheme");
+const FixedFeeSchemeContract = artifacts.require("FixedFeeScheme");
 
 const { MILLION, UNIT } = require("../lib/utils");
 
@@ -14,6 +15,7 @@ let TEAM_WALLET;
 let FOUNDER_WALLET;
 let TOMO_ALLOCATION_WALLET;
 let PERCENTAGE_FEE_SCHEME;
+let FIXED_FEE_SCHEME;
 
 contract("SIROToken", accounts => {
   describe("Test Issuer TRC21", async () => {
@@ -122,7 +124,7 @@ contract("SIROToken", accounts => {
         });
       });
 
-      describe("given valid address for Fee Scheme", async () => {
+      describe("given 1% Percentage Fee Scheme address for Fee Scheme", async () => {
         describe("should deploy success", async () => {
           it("estimate fee for 100 should be 1", async () => {
             DEPLOYER = COMMUNITY_WALLET = accounts[0];
@@ -147,6 +149,37 @@ contract("SIROToken", accounts => {
 
             let fee = await SIRO.estimateFee(100);
             assert.equal(fee, 1);
+          });
+        });
+      });
+
+      describe("given 5 Token Fixed Fee Scheme address for Fee Scheme", async () => {
+        describe("should deploy success", async () => {
+          it("estimate fee for 100 should be 5", async () => {
+            DEPLOYER = COMMUNITY_WALLET = accounts[0];
+            CROWD_FUNDING_WALLET = accounts[1];
+            ECO_WALLET = accounts[2];
+            COMPANY_WALLET = accounts[3];
+            TEAM_WALLET = accounts[4];
+            FOUNDER_WALLET = accounts[5];
+            TOMO_ALLOCATION_WALLET = accounts[6];
+            FIXED_FEE_SCHEME = await FixedFeeSchemeContract.new();
+
+            await FIXED_FEE_SCHEME.setFee(5 * UNIT)
+
+            SIRO = await SIROToken.new(
+              COMMUNITY_WALLET,
+              CROWD_FUNDING_WALLET,
+              ECO_WALLET,
+              COMPANY_WALLET,
+              TEAM_WALLET,
+              FOUNDER_WALLET,
+              TOMO_ALLOCATION_WALLET,
+              FIXED_FEE_SCHEME.address
+            );
+
+            let fee = await SIRO.estimateFee(100 * UNIT);
+            assert.equal(fee, 5 * UNIT);
           });
         });
       });
