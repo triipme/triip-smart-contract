@@ -375,6 +375,10 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
         return feeScheme.estimateFee(_value);
     }
 
+    /**
+     * @dev ERC677 combine with TRC21
+     * contract receive transferAndCall must be ERC677Receiver & IFeeScheme
+     */
     function estimateContractFee(address _contract, uint _value) public view returns (uint) {
         
         return IFeeScheme(_contract).estimateFee(_value);
@@ -406,13 +410,11 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
     */
     function transferAndCall(address _to, uint _value, bytes _data) public whenNotPaused returns (bool success) {
       
-        require(_value <= balances[msg.sender]);
-        require(_to != address(0));
+        require(_value <= balances[msg.sender], "Balance of sender must be greater than or equals with sending amount");
+        require(_to != address(0), "Contract receiver's address should not be Zero");
+        require (isContract(_to), "Receiver transferAndCall must be contract");
 
-        uint _transferFee = estimateFee(_value);
-        if (isContract(_to)) {
-            _transferFee = estimateContractFee(_to, _value);
-        }
+        uint _transferFee = estimateContractFee(_to, _value);
         uint _amountReceived = _value.sub(_transferFee);
         
         _transfer(msg.sender, _to, _amountReceived);
@@ -423,9 +425,8 @@ contract SIROToken is TRC21, Ownable, Pausable, BytesUtils {
             emit Fee(msg.sender, _to, issuer(), _transferFee);
         }
 
-        if (isContract(_to)) {
-            contractFallback(_to, _value, _data);
-        }
+        contractFallback(_to, _value, _data);
+
         return true;
     }
     
